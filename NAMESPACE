@@ -1,0 +1,39 @@
+exportClasses(
+   TrenaViz,
+   Recipe,
+   Cook)
+
+export(
+    TrenaViz,
+    Cook,
+    Recipe,
+    geneRegulatoryModelToGraph,
+    addGraph,
+    loadStyle,
+    addBedTrackFromDataFrame,
+    addBedTrackFromHostedFile,
+    showGenomicRegion,
+    getGenomicRegion,
+    buildMultiModelGraph,
+    addGeneModelLayout,
+    fit,
+    fitSelected,
+    selectNodes,
+    getSelectedNodes,
+    clearSelection,
+    sfn,
+    layoutStrategies,
+    layout
+    )
+
+exportMethods(
+
+)
+
+import(
+)
+
+import(jsonlite)
+importFrom(RSQLite, SQLite)
+importFrom(RPostgreSQL, PostgreSQL)
+importFrom(RMySQL, MySQL)

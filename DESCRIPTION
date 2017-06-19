@@ -1,0 +1,32 @@
+Package: TrenaHelpers
+Type: Package
+Title: visualization and run-time support fro trena
+Version: 0.99.01
+Date: 2017-06-19
+Author: Paul Shannon <pshannon@systemsbioloyg.org>
+Maintainer: Paul Shannon <pshannon@systemsbioloyg.org>
+Imports:
+    RSQLite,
+    RPostgreSQL,
+    methods,
+    RMySQL,
+    DBI,
+    graph,
+    jsonlite
+Depends:
+    R (>= 3.3.0),
+    utils,
+    GenomicRanges,
+    BrowserViz,
+    graph,
+    jsonlite
+Suggests:
+    RUnit,
+Description: visualization, recipes, cook
+License: MIT
+biocViews: Transcription, GeneRegulation, NetworkInference, FeatureExtraction, Regression,
+    SystemsBiology, GeneExpression
+Collate:
+    'Recipe.R'
+    'Cook.R'
+    'TrenaViz.R'
