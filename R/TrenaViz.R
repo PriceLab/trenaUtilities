@@ -31,7 +31,7 @@ setGeneric('layoutStrategies',    signature='obj', function(obj) standardGeneric
 setGeneric('geneRegulatoryModelToGraph',    signature='obj', function(obj, target.gene, tbl.gm, tbl.reg)
                                   standardGeneric('geneRegulatoryModelToGraph'))
 setGeneric('buildMultiModelGraph', signature='obj', function(obj, target.gene, models) standardGeneric('buildMultiModelGraph'))
-setGeneric('addGeneModelLayout', signature='obj', function(obj, g) standardGeneric('addGeneModelLayout'))
+setGeneric('addGeneModelLayout', signature='obj', function(obj, g, xPos.span) standardGeneric('addGeneModelLayout'))
 #----------------------------------------------------------------------------------------------------
 # constructor
 TrenaViz = function(portRange=11000:11025, host="localhost", title="TReNA-Viz", quiet=TRUE)
@@ -523,7 +523,7 @@ graphToJSON <- function(g)
 #------------------------------------------------------------------------------------------------------------------------
 setMethod('addGeneModelLayout', 'TrenaViz',
 
-  function (obj, g){
+  function (obj, g, xPos.span=1500){
     printf("--- addGeneModelLayout")
     all.distances <- sort(unique(unlist(nodeData(g, attr='distance'), use.names=FALSE)))
     print(all.distances)
@@ -536,8 +536,16 @@ setMethod('addGeneModelLayout', 'TrenaViz',
     span.endpoints <- range(c(0, as.numeric(nodeData(g, fp.nodes, attr="distance"))))
     span <- max(span.endpoints) - min(span.endpoints)
     footprintLayoutFactor <- 1
-    if(span < 600)  #
-       footprintLayoutFactor <- 600/span
+    printf("initial:  span: %d  footprintLayoutFactor: %f", span, footprintLayoutFactor)
+
+    footprintLayoutFactor <- xPos.span/span
+
+    #if(span < 600)  #
+    #   footprintLayoutFactor <- 600/span
+    #if(span > 1000)
+    #   footprintLayoutFactor <- span/1000
+
+    printf("corrected:  span: %d  footprintLayoutFactor: %f", span, footprintLayoutFactor)
 
     xPos <- as.numeric(nodeData(g, fp.nodes, attr="distance")) * footprintLayoutFactor
     yPos <- 0
@@ -688,12 +696,13 @@ setMethod('buildMultiModelGraph', 'TrenaViz',
        tbl.model <- model$tbl.model
        tfs <- unique(c(tfs, tbl.model$tf))
        tbl.reg <- model$tbl.regulatoryRegions
-       regulatoryRegions <- unique(c(regulatoryRegions, tbl.reg$regionName))
+       regulatoryRegions <- unique(c(regulatoryRegions, tbl.reg$id))
        } # for model
 
     all.nodes <- unique(c(target.gene, tfs, regulatoryRegions))
     g <- addNode(all.nodes, g)
 
+    browser()
     nodeData(g, target.gene, "type") <- "targetGene"
     nodeData(g, tfs, "type")         <- "TF"
     nodeData(g, regulatoryRegions, "type")  <- "regulatoryRegion"
@@ -703,14 +712,14 @@ setMethod('buildMultiModelGraph', 'TrenaViz',
 
     for(model in models){
        tfs <- model$tbl.regulatoryRegions$tf
-       regRegions <- model$tbl.regulatoryRegions$regionName
+       regRegions <- model$tbl.regulatoryRegions$id
        suppressWarnings(g <- addEdge(tfs, regRegions, g))
        edgeData(g,  tfs, regRegions, "edgeType") <- "bindsTo"
        suppressWarnings(g <- addEdge(regRegions, target.gene, g))
        edgeData(g, regRegions, target.gene, "edgeType") <- "regulatorySiteFor"
-       nodeData(g, tbl.reg$regionName, "label") <- tbl.reg$motifName
-       nodeData(g, tbl.reg$regionName, "distance") <- tbl.reg$distance.from.tss
-       nodeData(g, tbl.reg$regionName, "motif") <- tbl.reg$motifName
+       nodeData(g, tbl.reg$id, "label") <- tbl.reg$motifName
+       nodeData(g, tbl.reg$id, "distance") <- tbl.reg$distance.from.tss
+       nodeData(g, tbl.reg$id, "motif") <- tbl.reg$motifName
        } # for model
 
       # now copy in the first model's tf node data
