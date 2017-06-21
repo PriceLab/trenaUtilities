@@ -64,8 +64,6 @@ setMethod('getGeneModelTableColumnNames', 'TrenaPrep',
 #------------------------------------------------------------------------------------------------------------------------
 .callHumanDHSFilter <- function(obj, source, chromosome, chromStart, chromEnd, targetGene, targetGeneTSS)
 {
-   browser()
-
     chromLocString <- sprintf("%s:%d-%d", chromosome, chromStart, chromEnd)
     dhsFilter <- HumanDHSFilter(genome="hg38",
                                 encodeTableName="wgEncodeRegDnaseClustered",
@@ -84,7 +82,7 @@ setMethod('getGeneModelTableColumnNames', 'TrenaPrep',
     colnames(tbl.dhs)[grep("motifRelativeScore", colnames(tbl.dhs))] <- "score"
     colnames(tbl.dhs)[grep("tfs", colnames(tbl.dhs))] <- "tf"
     tbl.dhs$distance.from.tss <- distance
-    tbl.dhs$id <- sprintf("%s.fp.%s.%06d.%s", targetGene, direction, abs(distance), tbl.dhs$motifName)
+    tbl.dhs$id <- sprintf("%s.dhs.%s.%06d.%s", targetGene, direction, abs(distance), tbl.dhs$motifName)
 
     tbl.dhs <- tbl.dhs[, getRegulatoryTableColumnNames(obj)]
 
@@ -97,17 +95,20 @@ setMethod('getRegulatoryRegions', 'TrenaPrep',
       function(obj, combine=FALSE){
          tbl.combined <- data.frame()
          result <- list()
+
+         sources <- obj@regulatoryRegionSources
          encodeDHS.source.index <- grep("encodeHumanDHS", sources)
 
          if(length(encodeDHS.source.index)){
             sources <- sources[-encodeDHS.source.index]
             tbl.dhs <- .callHumanDHSFilter(obj, source, obj@chromosome, obj@chromStart, obj@chromEnd,
                                            obj@targetGene, obj@targetGeneTSS)
+            result[["encodeHumanDHS"]] <- tbl.dhs
             if(combine)
                tbl.combined <- rbind(tbl.combined, tbl.dhs)
             } # if encode DSH source requested
 
-         for(source in obj@regulatoryRegionSources){
+         for(source in sources){  # don't use the object slot.  use locally scoped, possibly modified variable
             tbl.fp <- .callFootprintFilter(obj, source, obj@chromosome, obj@chromStart, obj@chromEnd,
                                            obj@targetGene, obj@targetGeneTSS)
             if(combine)

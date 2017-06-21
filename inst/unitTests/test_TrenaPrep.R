@@ -1,13 +1,35 @@
 library(TrenaHelpers)
+library(RPostgreSQL)   # TODO: part of the nasty hack.  remove
 library(RUnit)
+#------------------------------------------------------------------------------------------------------------------------
+# temporary hack.  the database-accessing classes should clean up after themselves
+closeAllPostgresConnections <- function()
+{
+   connections <- RPostgreSQL::dbListConnections(RPostgreSQL::PostgreSQL())
+   printf(" TODO, nasty hack!  found %d Postgres connections open, now closing...", length(connections))
+   if(length(connections) > 0) for(i in 1:length(connections)){
+      dbDisconnect(connections[[i]])
+      } # for i
+
+} # closeAllPostgresConnections
 #------------------------------------------------------------------------------------------------------------------------
 runTests <- function()
 {
    test_constructor()
    test_canonicalTableColumnNames()
    test_.callFootprintFilterAndTFexpander()
+   closeAllPostgresConnections()
    test_getRegulatoryRegions_oneFootprintSource()
+   closeAllPostgresConnections()
    test_getRegulatoryRegions_twoFootprintSources()
+
+   closeAllPostgresConnections()
+   test_.callHumanDHSFilterAndTFexpander()
+   closeAllPostgresConnections()
+   test_getRegulatoryRegions_encodeDHS
+   closeAllPostgresConnections()
+   test_getRegulatoryRegions_twoFootprintSources_oneDHS()
+   closeAllPostgresConnections()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -143,7 +165,7 @@ test_getRegulatoryRegions_encodeDHS <- function()
    printf("--- test_getRegulatoryRegions_encodeDHS")
 
    aqp4.tss <- 26865884
-   sources <- list("encodeDHS")
+   sources <- list("encodeHumanDHS")
    prep <- TrenaPrep("AQP4", aqp4.tss, "chr18", aqp4.tss-100, aqp4.tss+100, regulatoryRegionSources=sources)
    x <- getRegulatoryRegions(prep)
    checkTrue(is(x, "list"))
@@ -152,7 +174,58 @@ test_getRegulatoryRegions_encodeDHS <- function()
 
    tbl.reg <- x[[sources[[1]]]]
    checkTrue(all(colnames(tbl.reg) == getRegulatoryTableColumnNames(prep)))
+   checkTrue(nrow(tbl.reg) > 20)
+   checkEquals(length(grep("AQP4.dhs", tbl.reg$id)), nrow(tbl.reg))
 
 } # test_getRegulatoryRegions_encodeDHS
 #------------------------------------------------------------------------------------------------------------------------
+test_getRegulatoryRegions_twoFootprintSources_oneDHS <- function()
+{
+   printf("--- test_getRegulatoryRegions_twoFootprintSources_oneDHS")
+   aqp4.tss <- 26865884
 
+   sources <- list("postgres://whovian/brain_hint_20",
+                   "encodeHumanDHS",
+                   "postgres://whovian/brain_wellington_16")
+
+   prep <- TrenaPrep("AQP4", aqp4.tss, "chr18", aqp4.tss-100, aqp4.tss+100, regulatoryRegionSources=sources)
+
+      # get, but don't combined, footprints from both sources
+   x <- getRegulatoryRegions(prep, combine=FALSE)  # the default
+   checkTrue(is(x, "list"))
+   checkEquals(length(x), 3)
+   checkEquals(sort(names(x)), sort(as.character(sources)))
+   checkTrue(all(unlist(lapply(x, function(element) is(element, "data.frame")), use.names=FALSE)))
+
+   tbl.reg <- x[[sources[[1]]]]
+   checkTrue(all(colnames(tbl.reg) == getRegulatoryTableColumnNames(prep)))
+
+   summary <- lapply(x, nrow)
+   checkEquals(summary[["postgres://whovian/brain_hint_20"]], 13)
+   checkEquals(summary[["postgres://whovian/brain_wellington_16"]], 11)
+   checkEquals(summary[["encodeHumanDHS"]], 23)
+
+
+      # get AND combine footprints and DHS regions  all three  sources
+   x <- getRegulatoryRegions(prep, combine=TRUE)  # the default
+   checkTrue(is(x, "list"))
+   checkEquals(length(x), 4)
+   checkEquals(sort(names(x)), sort(c(as.character(sources), "all")))
+   checkTrue(all(unlist(lapply(x, function(element) is(element, "data.frame")), use.names=FALSE)))
+
+       # the "all" table should have rowcount the sum of the other two
+   summary <- lapply(x, nrow)
+   checkEquals(summary[["postgres://whovian/brain_hint_20"]], 13)
+   checkEquals(summary[["postgres://whovian/brain_wellington_16"]], 11)
+   checkEquals(summary[["encodeHumanDHS"]], 23)
+   checkEquals(summary[["all"]], 47)
+
+   checkTrue(all(colnames(x[[1]]) == getRegulatoryTableColumnNames(prep)))
+   checkTrue(all(colnames(x[[2]]) == getRegulatoryTableColumnNames(prep)))
+   checkTrue(all(colnames(x[[3]]) == getRegulatoryTableColumnNames(prep)))
+   checkTrue(all(colnames(x[[4]]) == getRegulatoryTableColumnNames(prep)))
+
+} # test_getRegulatoryRegions_twoFootprintSources_oneDHS
+#------------------------------------------------------------------------------------------------------------------------
+if(!interactive())
+   runTests()
