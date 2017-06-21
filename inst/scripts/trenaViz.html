@@ -1628,6 +1628,10 @@ function addEdge(nodeA_id, nodeB_id)
 //----------------------------------------------------------------------------------------------------
 function createModelNamesMenu(modelNames)
 {
+   if(typeof(modelNames) == "string"){
+      modelNames = [modelNames];
+      }
+
    if(modelNames.length < 1){
      return;
      }
