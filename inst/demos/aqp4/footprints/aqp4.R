@@ -156,7 +156,6 @@ findAndDisplayRegulatoryRegions <- function()
 #------------------------------------------------------------------------------------------------------------------------
 create.wildtype.model <- function(tbl.regulatoryRegions, target.gene, chrom.name, chrom.start, chrom.end)
 {
-   tbl.mg <- read.table(system.file(package="TReNA", "extdata", "motifGenes.tsv"), sep="\t", as.is=TRUE, header=TRUE)
    tbl.small <- subset(tbl.regulatoryRegions, chrom==chrom.name & motifStart >= chrom.start & motifEnd <= chrom.end)
    tfs <- sort(unique(unlist(strsplit(tbl.small$tf, ";"))))
    tfs <- intersect(tfs, rownames(mtx))

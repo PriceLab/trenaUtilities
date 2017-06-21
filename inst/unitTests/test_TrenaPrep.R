@@ -2,6 +2,17 @@ library(TrenaHelpers)
 library(RPostgreSQL)   # TODO: part of the nasty hack.  remove
 library(RUnit)
 #------------------------------------------------------------------------------------------------------------------------
+if(!exists("mtx")){
+   load("~/github/projects/examples/microservices/trenaGeneModel/datasets/coryAD/rosmap_counts_matrix_normalized_geneSymbols_25031x638.RData")
+   # load(system.file(package="TReNA", "extdata/ampAD.154genes.mef2cTFs.278samples.RData"))
+   mtx <- asinh(mtx)
+   mtx.var <- apply(mtx, 1, var)
+   deleters <- which(mtx.var < 0.01)
+   if(length(deleters) > 0)   # 15838 x 638
+      mtx <- mtx[-deleters,]
+   }
+
+#------------------------------------------------------------------------------------------------------------------------
 # temporary hack.  the database-accessing classes should clean up after themselves
 closeAllPostgresConnections <- function()
 {
@@ -17,19 +28,16 @@ runTests <- function()
 {
    test_constructor()
    test_canonicalTableColumnNames()
+
    test_.callFootprintFilterAndTFexpander()
-   closeAllPostgresConnections()
    test_getRegulatoryRegions_oneFootprintSource()
-   closeAllPostgresConnections()
    test_getRegulatoryRegions_twoFootprintSources()
 
-   closeAllPostgresConnections()
    test_.callHumanDHSFilterAndTFexpander()
-   closeAllPostgresConnections()
    test_getRegulatoryRegions_encodeDHS
-   closeAllPostgresConnections()
    test_getRegulatoryRegions_twoFootprintSources_oneDHS()
-   closeAllPostgresConnections()
+
+   test_createGeneModel()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -120,6 +128,7 @@ test_getRegulatoryRegions_oneFootprintSource <- function()
 
    tbl.reg <- x[[sources[[1]]]]
    checkTrue(all(colnames(tbl.reg) == getRegulatoryTableColumnNames(prep)))
+   closeAllPostgresConnections()
 
 } # test_getRegulatoryRegions_oneFootprintSource
 #------------------------------------------------------------------------------------------------------------------------
@@ -158,6 +167,8 @@ test_getRegulatoryRegions_twoFootprintSources <- function()
    checkTrue(all(colnames(x[[2]]) == getRegulatoryTableColumnNames(prep)))
    checkTrue(all(colnames(x[[3]]) == getRegulatoryTableColumnNames(prep)))
 
+   closeAllPostgresConnections()
+
 } # test_getRegulatoryRegions_twoFootprintSources
 #------------------------------------------------------------------------------------------------------------------------
 test_getRegulatoryRegions_encodeDHS <- function()
@@ -176,6 +187,8 @@ test_getRegulatoryRegions_encodeDHS <- function()
    checkTrue(all(colnames(tbl.reg) == getRegulatoryTableColumnNames(prep)))
    checkTrue(nrow(tbl.reg) > 20)
    checkEquals(length(grep("AQP4.dhs", tbl.reg$id)), nrow(tbl.reg))
+
+   closeAllPostgresConnections()
 
 } # test_getRegulatoryRegions_encodeDHS
 #------------------------------------------------------------------------------------------------------------------------
@@ -225,7 +238,28 @@ test_getRegulatoryRegions_twoFootprintSources_oneDHS <- function()
    checkTrue(all(colnames(x[[3]]) == getRegulatoryTableColumnNames(prep)))
    checkTrue(all(colnames(x[[4]]) == getRegulatoryTableColumnNames(prep)))
 
+   closeAllPostgresConnections()
+
 } # test_getRegulatoryRegions_twoFootprintSources_oneDHS
+#------------------------------------------------------------------------------------------------------------------------
+test_createGeneModel <- function()
+{
+   printf("--- test_createGeneModel")
+   aqp4.tss <- 26865884
+   fp.source <- "postgres://whovian/brain_hint_20"
+   sources <- list(fp.source)
+
+   prep <- TrenaPrep("AQP4", aqp4.tss, "chr18", aqp4.tss-100, aqp4.tss+100, regulatoryRegionSources=sources)
+   x <- getRegulatoryRegions(prep)
+   closeAllPostgresConnections()
+   tbl.regulatoryRegions <- x[[fp.source]]
+
+   tbl.geneModel <- createGeneModel(prep, "randomForest", tbl.regulatoryRegions, mtx)
+   checkTrue(all(getGeneModelTableColumnNames(prep) == colnames(tbl.geneModel)))
+   tbl.strong <- subset(tbl.geneModel, randomForest > 3)
+   checkTrue(all(c("TEAD1", "SP3", "KLF3", "NEUROD2") %in% tbl.strong$tf))
+
+} # test_createGeneModel
 #------------------------------------------------------------------------------------------------------------------------
 if(!interactive())
    runTests()

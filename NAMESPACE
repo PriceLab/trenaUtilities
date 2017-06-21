@@ -29,7 +29,8 @@ export(
     getRegulatoryRegions,
     getRegulatoryTableColumnNames,
     getGeneModelTableColumnNames,
-    expandRegulatoryRegionsTableByTF
+    expandRegulatoryRegionsTableByTF,
+    createGeneModel
     )
 
 exportMethods(

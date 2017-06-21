@@ -12,6 +12,8 @@ setGeneric('getRegulatoryRegions',  signature='obj', function(obj, combine=FALSE
 setGeneric('getRegulatoryTableColumnNames',  signature='obj', function(obj) standardGeneric ('getRegulatoryTableColumnNames'))
 setGeneric('getGeneModelTableColumnNames',  signature='obj', function(obj) standardGeneric ('getGeneModelTableColumnNames'))
 setGeneric('expandRegulatoryRegionsTableByTF', signature='obj', function(obj, tbl.reg) standardGeneric('expandRegulatoryRegionsTableByTF'))
+setGeneric('createGeneModel', signature='obj', function(obj,  solvers, tbl.regulatoryRegions, mtx)
+              standardGeneric('createGeneModel'))
 #------------------------------------------------------------------------------------------------------------------------
 # a temporary hack: some constants
 genome.db.uri <- "postgres://bddsrds.globusgenomics.org/hg38"   # has gtf and motifsgenes tables
@@ -134,5 +136,31 @@ setMethod('expandRegulatoryRegionsTableByTF', 'TrenaPrep',
         tbl.expanded$tf <- tfs.split.vec
         tbl.expanded
         }) # expandRegulatoryRegionsTableByTF
+
+#------------------------------------------------------------------------------------------------------------------------
+setMethod('createGeneModel', 'TrenaPrep',
+
+      function(obj, solvers, tbl.regulatoryRegions, mtx){
+
+         stopifnot(solvers=="randomForest")  # more solvers to come
+         tbl.small <- subset(tbl.regulatoryRegions,
+                             chrom==obj@chromosome & motifStart >= obj@chromStart & motifEnd <= obj@chromEnd)
+
+         tfs <- sort(unique(unlist(strsplit(tbl.small$tf, ";"))))
+         tfs <- intersect(tfs, rownames(mtx))
+         printf("tf candidate count: %d", length(tfs))
+         solver.wt <- RandomForestSolver(mtx, targetGene=obj@targetGene, candidateRegulators=tfs)
+         model.wt  <-run(solver.wt)
+         count <- nrow(model.wt$edges)
+         tbl.model <- data.frame(tf=rownames(model.wt$edges),
+                                 randomForest=model.wt$edges$IncNodePurity,
+                                 pearson=model.wt$edges$gene.cor,
+                                 spearman=rep(0, count),
+                                 betaLasso=rep(0, count),
+                                 pcaMax=rep(0, count),
+                                 concordance=rep(0, count),
+                                 stringsAsFactors=FALSE)
+         tbl.model
+      }) # createGeneModel
 
 #------------------------------------------------------------------------------------------------------------------------
