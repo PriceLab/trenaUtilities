@@ -29,4 +29,5 @@ biocViews: Transcription, GeneRegulation, NetworkInference, FeatureExtraction, R
 Collate:
     'Recipe.R'
     'Cook.R'
+    'TrenaPrep.R'
     'TrenaViz.R'

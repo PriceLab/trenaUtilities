@@ -1,9 +1,11 @@
 exportClasses(
+   TrenaPrep,
    TrenaViz,
    Recipe,
    Cook)
 
 export(
+    TrenaPrep,
     TrenaViz,
     Cook,
     Recipe,
