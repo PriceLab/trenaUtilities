@@ -2,6 +2,7 @@ library(TReNA)
 library(TrenaHelpers)
 library(RPostgreSQL)
 library(RUnit)
+library(splitstackshape)
 #------------------------------------------------------------------------------------------------------------------------
 tbl.snp <- data.frame(target.gene=rep("AQP4", 5),
                       chromosome=rep("chr18", 5),
@@ -9,6 +10,10 @@ tbl.snp <- data.frame(target.gene=rep("AQP4", 5),
                       snp=c("rs3763040", "rs3875089", "rs335929", "rs3763043", "rs9951307"),
                       genome=rep("hg38", 5),
                       stringsAsFactors=FALSE)
+
+tbl.reg.colnames <- c("chrom", "motifStart", "motifEnd", "motifName", "strand", "score", "length", "distance.from.tss", "id", "tf")
+tbl.model.colnames <- c("tf", "randomForest", "pearson", "spearman", "betaLasso", "pcaMax", "concordance")
+
 #------------------------------------------------------------------------------------------------------------------------
 if(!exists("mtx")){
   load("~/github/projects/examples/microservices/trenaGeneModel/datasets/coryAD/rosmap_counts_matrix_normalized_geneSymbols_25031x638.RData")
@@ -40,7 +45,6 @@ getAndDisplayFootprintsFromDatabases <- function(tv, target.gene, tss, chrom, st
    genome.db.uri <- "postgres://bddsrds.globusgenomics.org/hg38"   # has gtf and motifsgenes tables
    tbl.combined <- data.frame()
 
-   coi <- c("chrom", "motifStart", "motifEnd", "motifName", "strand", "score", "length", "id")
    chromLocString <- sprintf("%s:%d-%d", chrom, start, end)
 
    for(dbName in dboi[1]){
@@ -48,15 +52,15 @@ getAndDisplayFootprintsFromDatabases <- function(tv, target.gene, tss, chrom, st
      fpFilter <- FootprintFilter(genome.db.uri, footprint.db.uri, list(), chromLocString)
      x.fp <- getCandidates(fpFilter)
      tbl.fp <- x.fp$tbl
-     colnames(tbl.fp) <- c("chrom", "motifStart", "motifEnd", "motifName", "length", "strand", "score1", "score", "score3")
+     colnames(tbl.fp) <- c("chrom", "motifStart", "motifEnd", "motifName", "length", "strand", "score1", "score", "score3", "tf")
      distance <- tbl.fp$motifStart - tss
      direction <- rep("upstream", length(distance))
      direction[which(distance < 0)] <- "downstream"
+     tbl.fp$distance.from.tss <- distance
      tbl.fp$id <- sprintf("%s.fp.%s.%06d.%s", target.gene, direction, abs(distance), tbl.fp$motifName)
-     tbl.fp <- tbl.fp[, coi]
+     tbl.fp <- tbl.fp[, tbl.reg.colnames]
      tbl.combined <- rbind(tbl.combined, tbl.fp)
      addBedTrackFromDataFrame(tv, dbName, tbl.fp[, c("chrom", "motifStart", "motifEnd", "motifName", "score")], color="blue")
-     #closeDatabaseConnections(fpFilter)
      }
 
     dhsFilter <- HumanDHSFilter(genome="hg38",
@@ -72,11 +76,12 @@ getAndDisplayFootprintsFromDatabases <- function(tv, target.gene, tss, chrom, st
     direction <- rep("upstream", length(distance))
     direction[which(distance < 0)] <- "downstream"
 
-    #browser()
     colnames(tbl.dhs)[grep("motifRelativeScore", colnames(tbl.dhs))] <- "score"
+    colnames(tbl.dhs)[grep("tfs", colnames(tbl.dhs))] <- "tf"
+    tbl.dhs$distance.from.tss <- distance
     tbl.dhs$id <- sprintf("%s.fp.%s.%06d.%s", target.gene, direction, abs(distance), tbl.dhs$motifName)
 
-    tbl.dhs <- tbl.dhs[, coi]
+    tbl.dhs <- tbl.dhs[, tbl.reg.colnames]
     tbl.combined <- rbind(tbl.combined, tbl.dhs)
 
    printf("%d dhs regions in %d bases from %s", nrow(tbl.dhs), 1  + end - start, "DHS")
@@ -86,7 +91,19 @@ getAndDisplayFootprintsFromDatabases <- function(tv, target.gene, tss, chrom, st
    tbl.combined.bed$score <- 1
    addBedTrackFromDataFrame(tv, "all", tbl.combined.bed, color="magenta")
 
-   invisible(tbl.combined)
+   browser()
+   printf("----- expanding tfs, starting row count: %d", nrow(tbl.combined))
+   tbl.trimmed <- subset(tbl.combined, nchar(tf) != 0)
+   tfs.split <- strsplit(tbl.trimmed$tf, ";")
+   length(tfs.split) # [1] 36929
+   counts <- unlist(lapply(tfs.split, length))
+   tfs.split.vec <- unlist(tfs.split)
+   tbl.expanded <- expandRows(tbl.trimmed, counts, count.is.col=FALSE, drop=FALSE)
+   checkEquals(length(tfs.split.vec), nrow(tbl.expanded))
+   tbl.expanded$tf <- tfs.split.vec
+   printf("----- expanding tfs, done, concluding row count: %d", nrow(tbl.expanded))
+
+   invisible(tbl.expanded)
 
 } # getAndDisplayFootprintsFromDatabases
 #------------------------------------------------------------------------------------------------------------------------
@@ -124,6 +141,7 @@ findAndDisplayRegulatoryRegions <- function()
    end   <- snp.end
 
    tbl.combined <- getAndDisplayFootprintsFromDatabases(tv, target.gene, tss, chrom, start, end)
+   browser()
    region <- sprintf("%s:%d-%d", tbl.snp$chromosome[1], start-1000, end+1000)
    showGenomicRegion(tv, region)
    addBedTrackFromDataFrame(tv, "snp",
@@ -139,9 +157,8 @@ findAndDisplayRegulatoryRegions <- function()
 create.wildtype.model <- function(tbl.regulatoryRegions, target.gene, chrom.name, chrom.start, chrom.end)
 {
    tbl.mg <- read.table(system.file(package="TReNA", "extdata", "motifGenes.tsv"), sep="\t", as.is=TRUE, header=TRUE)
-   browser();
-   tbl.small <- subset(tbl.regulatoryRegions, chrom==chrom.name & start >= chrom.start & end <= chrom.end)
-   tfs <- unique(unlist(lapply(tbl.small$name, function(m) subset(tbl.mg, motif==m)$tf.gene)))
+   tbl.small <- subset(tbl.regulatoryRegions, chrom==chrom.name & motifStart >= chrom.start & motifEnd <= chrom.end)
+   tfs <- sort(unique(unlist(strsplit(tbl.small$tf, ";"))))
    tfs <- intersect(tfs, rownames(mtx))
    printf("tf candidate count: %d", length(tfs))
    solver.wt <- RandomForestSolver(mtx, targetGene=target.gene, candidateRegulators=tfs)
@@ -155,30 +172,113 @@ create.wildtype.model <- function(tbl.regulatoryRegions, target.gene, chrom.name
                            pcaMax=rep(0, count),
                            concordance=rep(0, count),
                            stringsAsFactors=FALSE)
-   tbl.model <- subset(tbl.model, randomForest >= 2)
+   #tbl.model <- subset(tbl.model, randomForest >= 2)
 
-   aqp4.tss <- 26865884
-   required.regulatoryRegionsColumnNames <- c("chrom", "motifStart", "motifEnd", "motifName",
-                                              "strand", "score", "length", "id")
+   #aqp4.tss <- 26865884
+   #required.regulatoryRegionsColumnNames <- c("chrom", "motifStart", "motifEnd", "motifName",
+   #                                           "strand", "score", "length", "id")
 
-   tfs <- lapply(tbl.regulatoryRegions$motifName, function(m) subset(tbl.mg, motif==m)$tf.gene)
-   tbl.motifs <- with(tbl.regulatoryRegions, data.frame(motifName=name, chrom=chrom, motifStart=start, motifEnd=end,
-                                                        strand=stran, score=score, tf=tfs))
+   #tfs <- lapply(tbl.regulatoryRegions$motifName, function(m) subset(tbl.mg, motif==m)$tf.gene)
+   #tbl.motifs <- with(tbl.regulatoryRegions, data.frame(motifName=name, chrom=chrom, motifStart=start, motifEnd=end,
+   #                                                     strand=stran, score=score, tf=tfs))
+   #print(head(model.wt$edges, n=20))
+   #browser()
+   #xyz <- 99;
 
-   print(head(model.wt$edges, n=20))
-   browser()
-   xyz <- 99;
+   tbl.model
 
 } # create.wildtype.model
 #------------------------------------------------------------------------------------------------------------------------
-run.all <- function()
+test.findRegulatoryRegions <- function()
 {
-   x <<- findAndDisplayRegulatoryRegions()
-   showGenomicRegion(x$tv, "18:26,862,000-26,866,000")
-   chromLoc <<- TReNA:::.parseChromLocString(getGenomicRegion(x$tv))
-   #model <<- create.wildtype.model(x$tbl, target.gene="AQP4", chromLoc$chrom, chromLoc$start, chromLoc$end)
-   browser()
-   xyz <- 99;
+   printf("--- test.findRegulatoryRegions")
 
-} # run.all
+   x <- findAndDisplayRegulatoryRegions()
+   tbl.reg <- x$tbl
+   checkEquals(colnames(tbl.reg), tbl.reg.colnames)
+
+      # should be no semi-colon-separated tf names
+   checkEquals(length(grep(";", tbl.reg$tf)), 0)
+      # no empty tf names either
+   length(which(nchar(tbl.reg$tf)==0))
+
+      # with current profligate assignment of tfs to motifs, the
+      # expanded tbl.reg - with one tf per row - is big
+   checkTrue(nrow(tbl.reg) > 10000)
+
+   save(tbl.reg, file="tbl.reg.4k.sample.RData")
+
+   #showGenomicRegion(x$tv, "18:26,862,000-26,866,000")
+   #chromLoc <<- TReNA:::.parseChromLocString(getGenomicRegion(x$tv))
+   #model <<- create.wildtype.model(x$tbl, target.gene="AQP4", chromLoc$chrom, chromLoc$start, chromLoc$end)
+   #browser()
+   #xyz <- 99;
+
+} # test.findRegulatoryRegions
+#------------------------------------------------------------------------------------------------------------------------
+test.create.wildtype.model <- function()
+{
+   printf("--- test.create.wildtype.model")
+
+   load("tbl.reg.4k.sample.RData")
+   tbl.model <- create.wildtype.model(tbl.reg, target.gene="AQP4", "chr18", 26865188, 26866330)
+   tbl.model <- subset(tbl.model, randomForest > 10)  # just a few rows
+   checkTrue(nrow(tbl.model) >= 4)
+   checkEquals(colnames(tbl.model), tbl.model.colnames)
+   save(tbl.model, file="tbl.model.4k.sample.RData")
+
+} # test.create.wildtype.model
+#------------------------------------------------------------------------------------------------------------------------
+test.createMultiModelGraph <- function()
+{
+   printf("--- test.create.wildtype.model")
+
+   load("tbl.reg.4k.sample.RData")    # 42545 x 10
+   load("tbl.model.4k.sample.RData")  # 4 x 7
+   tbl.reg.reduced <- subset(tbl.reg, tf %in% tbl.model$tf)
+
+   tViz <- TrenaViz()
+
+   models <- list(wt=list(tbl.model=tbl.model, tbl.regulatoryRegions=tbl.reg.reduced))
+
+   g <- buildMultiModelGraph(tViz, "AQP4", models)
+   checkTrue(all(c("AQP4", tbl.reg.reduced$id, tbl.model$tf) %in% nodes(g)))
+   save(g, file="g.400.RData")
+
+   checkEquals(length(nodes(g)), 34)
+   checkEquals(length(edgeNames(g)), 46)
+
+   noa.names <- sort(names(nodeDataDefaults(g)))
+   checkEquals(length(noa.names), 33)
+   checkEquals(length(grep("rs3875089.", noa.names, fixed=TRUE)), 11)
+   checkEquals(length(grep("wt.", noa.names, fixed=TRUE)), 11)
+
+   g.lo <- addGeneModelLayout(tViz, g)
+
+   if(display){
+      addGraph(tViz, g.lo, names(models))
+      loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
+      Sys.sleep(3); fit(tViz)
+      browser();
+      xyz <- 99
+      }
+
+} # test.createMultiModelGraph
+#------------------------------------------------------------------------------------------------------------------------
+test.layout <- function()
+{
+   printf("--- test.layout")
+   load("g.4k.sample.RData")
+   tViz <- TrenaViz()
+   g.lo <- addGeneModelLayout(tViz, g, xPos.span=1500) # scale all genome distances so that they fit into 1500 pixels
+   distances <- as.numeric(nodeData(g.lo, attr="distance"))   # -13608 .. 9430
+   xPos <- as.numeric(nodeData(g.lo, attr="xPos"))
+   actual.xPos.span <- abs(max(xPos) - min(xPos))
+   checkEqualsNumeric(actual.xPos.span, 1500)
+
+   addGraph(tViz, g.lo, "AQP4")
+   loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
+   Sys.sleep(3); fit(tViz)
+
+} # test.layout
 #------------------------------------------------------------------------------------------------------------------------
