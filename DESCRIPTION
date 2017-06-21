@@ -15,6 +15,7 @@ Imports:
     jsonlite
 Depends:
     R (>= 3.3.0),
+    TReNA,
     utils,
     GenomicRanges,
     BrowserViz,

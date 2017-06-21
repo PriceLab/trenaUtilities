@@ -25,7 +25,11 @@ export(
     clearSelection,
     sfn,
     layoutStrategies,
-    layout
+    layout,
+    getRegulatoryRegions,
+    getRegulatoryTableColumnNames,
+    getGeneModelTableColumnNames,
+    expandRegulatoryRegionsTableByTF
     )
 
 exportMethods(
@@ -33,9 +37,11 @@ exportMethods(
 )
 
 import(
+
 )
 
 import(jsonlite)
 importFrom(RSQLite, SQLite)
 importFrom(RPostgreSQL, PostgreSQL)
 importFrom(RMySQL, MySQL)
+importFrom(splitstackshape, expandRows)
