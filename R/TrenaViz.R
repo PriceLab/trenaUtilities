@@ -570,9 +570,8 @@ setMethod('addGeneModelLayout', 'TrenaViz',
 {
    required.geneModelColumnNames <- c("tf", "pearson", "spearman", "betaLasso", "randomForest", "pcaMax", "concordance")
    required.regulatoryRegionsColumnNames <- c("motifName", "chrom", "motifStart", "motifEnd", "strand",
-                                              "motifScore", "motifRelativeScore", "match",
-                                              "distance.from.tss",
-                                              "chromStart", "chromEnd", "seq", "status", "tf", "regionName")
+                                              "score", "length", "label")
+
    valid <- TRUE;  # be optimistic
    model.names <- names(models)
    checkTrue(length(model.names) > 0)
@@ -621,16 +620,9 @@ test_validModelData <- function()
                                   motifStart=c(0),
                                   motifEnd=c(0),
                                   strand=c("+"),
-                                  motifScore=c(0),
-                                  motifRelativeScore=c(0),
-                                  match=c("a"),
-                                  distance.from.tss=c(0),
-                                  chromStart=c(0),
-                                  chromEnd=c(0),
-                                  seq=c(0),
-                                  status=c("wt"),
-                                  tf=c("a"),
-                                  regionName=c("xyz"),
+                                  score=c(0),
+                                  length=c(10),
+                                  label=c("xyz"),
                                   stringsAsFactors=FALSE
                                   )
 

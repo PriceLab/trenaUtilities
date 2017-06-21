@@ -6,7 +6,8 @@
    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
    <link rel="stylesheet" href="http://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
    <!-- script  src="http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js"></script -->
-   <script   src="http://pshannon.systemsbiology.net/js/cytoscape-3.0.0.js"></script>
+   <!-- script src="http://pshannon.systemsbiology.net/js/cytoscape-3.0.0.js"></script -->
+   <script src="https://cdn.rawgit.com/paul-shannon/CDN/master/js/cytoscape-3.0.0.js"></script>
    <script src="https://cdn.rawgit.com/paul-shannon/CDN/master/js/BrowserViz.js"></script>
 
   <script src='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
@@ -119,6 +120,9 @@ function initializeCytoscapeButtons(self)
 function initializeUI()
 {
    console.log("--- trenaViz, initializeUI");
+   console.log("initializeUI's this: ");
+   console.log(this);
+
    trenaVizDiv = $("#trenaVizDiv");
 
    trenaVizDiv.tabs({
@@ -179,39 +183,43 @@ function initializeIGV()
                    fastaURL: "http://igv.broadinstitute.org/genomes/seq/1kg_v37/human_g1k_v37_decoy.fasta",
                    cytobandURL: "http://igv.broadinstitute.org/genomes/seq/b37/b37_cytoband.txt"
                    },
-     /***********
-     reference: {id: "geneSymbols_hg38",
-         fastaURL: "http://pshannon.systemsbiology.net/genomes/hg38.fa",
-         cytobandURL: "http://pshannon.systemsbiology.net/genomes/cytoband.hg38.txt",
-         },
+     //reference: {id: "geneSymbols_hg38",
+     //    fastaURL: "http://pshannon.systemsbiology.net/genomes/hg38.fa",
+     //    cytobandURL: "http://pshannon.systemsbiology.net/genomes/cytoband.hg38.txt",
+     //    },
      tracks: [
         {name: 'Gencode v24',
-         url: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz",
-         indexURL: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz.tbi",
+         //url: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz",
+         //indexURL: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz.tbi",
+         url: "//s3.amazonaws.com/igv.broadinstitute.org/annotations/hg38/genes/gencode.v24.annotation.sorted.gtf.gz",
+         indexURL: "//s3.amazonaws.com/igv.broadinstitute.org/annotations/hg38/genes/gencode.v24.annotation.sorted.gtf.gz.tbi",
          format: 'gtf',
          visibilityWindow: 2000000,
          displayMode: 'EXPANDED'
          },
-        {name: 'geneSymbols_hg38',
-         url: 'http://pshannon.systemsbiology.net/hg38/geneSymbolSearch.bed',
-         indexed: false,
-         searchable: true,
-         visibilityWindow: 5000000,
-         displayMode: 'COLLAPSED',
-         color: "#448844"
-         }
+        //{name: 'geneSymbols_hg38',
+        // url: 'http://pshannon.systemsbiology.net/hg38/geneSymbolSearch.bed',
+        // indexed: false,
+        // searchable: true,
+        // visibilityWindow: 5000000,
+        // displayMode: 'COLLAPSED',
+        // color: "#448844"
+        // }
         ]
-      *******/
      }; // igvOptions
 
    console.log("--- trenaViz, igv:");
    console.log(igv)
    console.log("about to createBrowser");
 
-   window.igvBrowser = igv.createBrowser($("#igvDiv"), igvOptions);
-   window.igvBrowser.on("locusChange", function(referenceFrame, chromLocString){
-           console.log("chromLocString: " + chromLocString);
-            });
+   igvBrowser = igv.createBrowser($("#igvDiv"), igvOptions);
+
+   igvBrowser.on("locuschange",
+       function(referenceFrame, chromLocString){
+         console.log("chromLocString: " + chromLocString);
+         trenaViz.chromLocString = chromLocString;
+         });
+
    console.log("after createBrowser");
 
 } // initializeIGV
@@ -934,12 +942,12 @@ function showGenomicRegion(msg)
 
    hub.send({cmd: msg.callback, status: "success", callback: "", payload: ""});
 
-} // getGenomicRegion
+} // showGenomicRegion
 //----------------------------------------------------------------------------------------------------
 function getGenomicRegion(msg)
 {
    console.log("=== getGenomicRegion");
-   hub.send({cmd: msg.callback, status: "success", callback: "", payload: "chr1:0-0"});
+   hub.send({cmd: msg.callback, status: "success", callback: "", payload: trenaViz.chromLocString});
 
 } // getGenomicRegion
 //----------------------------------------------------------------------------------------------------
@@ -1915,7 +1923,8 @@ return{
    initUI: initializeUI,
    setEdgeRenderingMethod: setEdgeRenderingMethod,
    loadStyle: loadStyle,
-   nextCyModel: nextCyModel
+   nextCyModel: nextCyModel,
+   chromLocString: "chr1:1-1"
    };
 
 //----------------------------------------------------------------------------------------------------
