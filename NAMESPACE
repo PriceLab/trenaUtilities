@@ -16,7 +16,6 @@ export(
     addBedTrackFromHostedFile,
     showGenomicRegion,
     getGenomicRegion,
-    buildMultiModelGraph,
     addGeneModelLayout,
     fit,
     fitSelected,
@@ -30,7 +29,8 @@ export(
     getRegulatoryTableColumnNames,
     getGeneModelTableColumnNames,
     expandRegulatoryRegionsTableByTF,
-    createGeneModel
+    createGeneModel,
+    buildMultiModelGraph
     )
 
 exportMethods(

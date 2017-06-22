@@ -38,6 +38,10 @@ runTests <- function()
    test_getRegulatoryRegions_twoFootprintSources_oneDHS()
 
    test_createGeneModel()
+   test_buildMultiModelGraph_oneModel()
+   test_buildMultiModelGraph_fiveModels()
+
+   test_buildMultiModelGraph_twoModels_10k_span()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -259,7 +263,175 @@ test_createGeneModel <- function()
    tbl.strong <- subset(tbl.geneModel, randomForest > 3)
    checkTrue(all(c("TEAD1", "SP3", "KLF3", "NEUROD2") %in% tbl.strong$tf))
 
+   invisible(list(tbl.regulatoryRegions=tbl.regulatoryRegions,
+                  tbl.geneModel=tbl.geneModel))
+
 } # test_createGeneModel
+#------------------------------------------------------------------------------------------------------------------------
+test_buildMultiModelGraph_oneModel <- function(display=FALSE)
+{
+   printf("--- test_buildMultiModelGraph_oneModel")
+   targetGene <- "AQP4"
+   aqp4.tss <- 26865884
+   fp.source <- "postgres://whovian/brain_hint_20"
+   sources <- list(fp.source)
+
+   prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-100, aqp4.tss+100, regulatoryRegionSources=sources)
+   x <- getRegulatoryRegions(prep)
+   closeAllPostgresConnections()
+   tbl.regulatoryRegions <- expandRegulatoryRegionsTableByTF(prep, x[[fp.source]])
+
+   tbl.geneModel <- createGeneModel(prep, "randomForest", tbl.regulatoryRegions, mtx)
+   tbl.strong <- subset(tbl.geneModel, randomForest > 3)
+   tbl.regulatoryRegions.strong <- subset(tbl.regulatoryRegions, tf %in% tbl.strong$tf)
+
+   models <- list(rf3=list(tbl.regulatoryRegions=tbl.regulatoryRegions.strong,
+                           tbl.geneModel=tbl.strong))
+
+   #save(models, file="testModel.RData")
+   #load("testModel.RData")
+
+   g <- buildMultiModelGraph(prep, models)
+   nodesInGraph <- nodes(g)
+   regionNodes <- unique(models[[1]]$tbl.regulatoryRegions$id)
+   tfNodes <- unique(models[[1]]$tbl.regulatoryRegions$tf)
+   checkEquals(length(nodesInGraph), length(regionNodes) + length(tfNodes) + length(targetGene))
+   tbl.reg <- models[[1]]$tbl.regulatoryRegions
+   checkEquals(length(edgeNames(g)), nrow(tbl.reg) + length(unique(tbl.reg$id)))
+
+   g.lo <- addGeneModelLayout(prep, g, xPos.span=1500)
+   min.xPos <- min(as.numeric(nodeData(g.lo, attr="xPos")))
+   max.xPos <- max(as.numeric(nodeData(g.lo, attr="xPos")))
+   checkEquals(abs(max.xPos - min.xPos), 1500)
+
+   if(display){
+     tViz <<- TrenaViz()
+     addGraph(tViz, g.lo, names(models))
+     loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
+     Sys.sleep(3); fit(tViz)
+     browser()
+     }
+
+} # test_buildMultiModelGraph_oneModel
+#------------------------------------------------------------------------------------------------------------------------
+test_buildMultiModelGraph_fiveModels <- function(display=FALSE)
+{
+   printf("--- test_buildMultiModelGraph_fiveModels")
+   targetGene <- "AQP4"
+   aqp4.tss <- 26865884
+   fp.source <- "postgres://whovian/brain_hint_20"
+   sources <- list(fp.source)
+
+   prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-1000, aqp4.tss+1000, regulatoryRegionSources=sources)
+   x <- getRegulatoryRegions(prep)
+   closeAllPostgresConnections()
+   tbl.regulatoryRegions <- expandRegulatoryRegionsTableByTF(prep, x[[fp.source]])
+
+   tbl.geneModel <- createGeneModel(prep, "randomForest", tbl.regulatoryRegions, mtx)
+
+      # two get multiple models, filter on randomForest score
+   tbl.geneModel.rf10 <- subset(tbl.geneModel, randomForest > 10)
+   tbl.regulatoryRegions.rf10 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf10$tf)
+
+   tbl.geneModel.rf5 <- subset(tbl.geneModel, randomForest > 5)
+   tbl.regulatoryRegions.rf5 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf5$tf)
+
+
+   tbl.geneModel.rf3 <- subset(tbl.geneModel, randomForest > 3)
+   tbl.regulatoryRegions.rf3 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf3$tf)
+
+   tbl.geneModel.rf2 <- subset(tbl.geneModel, randomForest > 2)
+   tbl.regulatoryRegions.rf2 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf2$tf)
+
+   tbl.geneModel.rf1 <- subset(tbl.geneModel, randomForest > 1)
+   tbl.regulatoryRegions.rf1 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf1$tf)
+
+   models <- list(rf01=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf1,  tbl.geneModel=tbl.geneModel.rf1),
+                  rf02=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf2,  tbl.geneModel=tbl.geneModel.rf2),
+                  rf03=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf3,  tbl.geneModel=tbl.geneModel.rf3),
+                  rf05=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf5,  tbl.geneModel=tbl.geneModel.rf5),
+                  rf10=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf10, tbl.geneModel=tbl.geneModel.rf10)
+                  )
+
+   #save(models, file="testModel.RData")
+   #load("testModel.RData")
+
+   g <- buildMultiModelGraph(prep, models)
+   nodesInGraph <- nodes(g)
+   regionNodes <- unique(models[[1]]$tbl.regulatoryRegions$id)
+   tfNodes <- unique(models[[1]]$tbl.regulatoryRegions$tf)
+   checkEquals(length(nodesInGraph), length(regionNodes) + length(tfNodes) + length(targetGene))
+   tbl.reg <- models[[1]]$tbl.regulatoryRegions
+   #checkEquals(length(edgeNames(g)), nrow(tbl.reg) + length(unique(tbl.reg$id)))
+
+   g.lo <- addGeneModelLayout(prep, g, xPos.span=1500)
+   min.xPos <- min(as.numeric(nodeData(g.lo, attr="xPos")))
+   max.xPos <- max(as.numeric(nodeData(g.lo, attr="xPos")))
+   checkEquals(abs(max.xPos - min.xPos), 1500)
+
+   if(display){
+     tViz <<- TrenaViz()
+     addGraph(tViz, g.lo, names(models))
+     loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
+     Sys.sleep(3); fit(tViz)
+     browser()
+     }
+
+} # test_buildMultiModelGraph_fiveModels
+#------------------------------------------------------------------------------------------------------------------------
+test_buildMultiModelGraph_twoModels_10k_span <- function(display=FALSE)
+{
+   printf("--- test_buildMultiModelGraph_twoModels_10k_span")
+   targetGene <- "AQP4"
+   aqp4.tss <- 26865884
+   fp.source <- "postgres://whovian/brain_hint_20"
+   sources <- list(fp.source)
+
+   prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+5000, regulatoryRegionSources=sources)
+   x <- getRegulatoryRegions(prep)
+   closeAllPostgresConnections()
+   tbl.regulatoryRegions <- expandRegulatoryRegionsTableByTF(prep, x[[fp.source]])
+
+   tbl.geneModel <- createGeneModel(prep, "randomForest", tbl.regulatoryRegions, mtx)
+
+      # two get multiple models, filter on randomForest score
+   tbl.geneModel.rf10 <- subset(tbl.geneModel, randomForest > 10)
+   tbl.regulatoryRegions.rf10 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf10$tf)
+
+
+   tbl.geneModel.rf3 <- subset(tbl.geneModel, randomForest > 3)
+   tbl.regulatoryRegions.rf3 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf3$tf)
+
+
+   models <- list(rf03=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf3,  tbl.geneModel=tbl.geneModel.rf3),
+                  rf10=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf10, tbl.geneModel=tbl.geneModel.rf10)
+                  )
+
+   #save(models, file="testModel.RData")
+   #load("testModel.RData")
+
+   g <- buildMultiModelGraph(prep, models)
+   nodesInGraph <- nodes(g)
+   regionNodes <- unique(models[[1]]$tbl.regulatoryRegions$id)
+   tfNodes <- unique(models[[1]]$tbl.regulatoryRegions$tf)
+   checkEquals(length(nodesInGraph), length(regionNodes) + length(tfNodes) + length(targetGene))
+   tbl.reg <- models[[1]]$tbl.regulatoryRegions
+   #checkEquals(length(edgeNames(g)), nrow(tbl.reg) + length(unique(tbl.reg$id)))
+
+   g.lo <- addGeneModelLayout(prep, g, xPos.span=1500)
+   min.xPos <- min(as.numeric(nodeData(g.lo, attr="xPos")))
+   max.xPos <- max(as.numeric(nodeData(g.lo, attr="xPos")))
+   checkEquals(abs(max.xPos - min.xPos), 1500)
+
+   if(display){
+     tViz <<- TrenaViz()
+     addGraph(tViz, g.lo, names(models))
+     loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
+     Sys.sleep(3); fit(tViz)
+     browser()
+     }
+
+} # test_buildMultiModelGraph_fiveModels
 #------------------------------------------------------------------------------------------------------------------------
 if(!interactive())
    runTests()
