@@ -8,10 +8,9 @@ printf <- function(...) print(noquote(sprintf(...)))
                         prototype = prototype (uri="http://localhost", 9000)
                         )
 
-
 #----------------------------------------------------------------------------------------------------
 setGeneric('addGraph',         signature='obj', function(obj, graph, modelNames=list()) standardGeneric ('addGraph'))
-setGeneric('httpAddGraph',     signature='obj', function(obj, graph) standardGeneric ('httpAddGraph'))
+setGeneric('httpAddGraph',     signature='obj', function(obj, graph, modelNames=list()) standardGeneric ('httpAddGraph'))
 setGeneric('loadStyle',        signature='obj', function(obj, filename) standardGeneric ('loadStyle'))
 setGeneric('fit',              signature='obj', function(obj, padding=30) standardGeneric('fit'))
 setGeneric('fitSelected',      signature='obj', function(obj, padding=30) standardGeneric('fitSelectedContent'))
@@ -75,14 +74,16 @@ setMethod('addGraph', 'TrenaViz',
 #----------------------------------------------------------------------------------------------------
 setMethod('httpAddGraph', 'TrenaViz',
 
-  function (obj, graph) {
+  function (obj, graph, modelNames=list()) {
      printf("TrenaViz::httpAddGraph");
      print(graph)
-     g.json <- paste("network = ", as.character(biocGraphToCytoscapeJSON(graph)))
+     g.json <- paste("network = ", .graphToJSON(graph))
+     #g.json <- paste("network = ", as.character(biocGraphToCytoscapeJSON(graph)))
      filename <- "g.json"
+     payload <- list(graph=filename, modelNames=modelNames)
      write(g.json, file=filename)
      send(obj, list(cmd="httpAddGraph", callback="handleResponse", status="request",
-                    payload=filename))
+                    payload=payload))
      while (!browserResponseReady(obj)){
         Sys.sleep(.1)
         }

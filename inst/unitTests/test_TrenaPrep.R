@@ -40,8 +40,8 @@ runTests <- function()
    test_createGeneModel()
    test_buildMultiModelGraph_oneModel()
    test_buildMultiModelGraph_fiveModels()
+   test_buildMultiModelGraph_twoModels_15k_span()
 
-   test_buildMultiModelGraph_twoModels_10k_span()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -379,7 +379,7 @@ test_buildMultiModelGraph_fiveModels <- function(display=FALSE)
 
 } # test_buildMultiModelGraph_fiveModels
 #------------------------------------------------------------------------------------------------------------------------
-test_buildMultiModelGraph_twoModels_10k_span <- function(display=FALSE)
+test_buildMultiModelGraph_twoModels_15k_span <- function(display=FALSE)
 {
    printf("--- test_buildMultiModelGraph_twoModels_10k_span")
    targetGene <- "AQP4"
@@ -387,7 +387,7 @@ test_buildMultiModelGraph_twoModels_10k_span <- function(display=FALSE)
    fp.source <- "postgres://whovian/brain_hint_20"
    sources <- list(fp.source)
 
-   prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+5000, regulatoryRegionSources=sources)
+   prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+10000, regulatoryRegionSources=sources)
    x <- getRegulatoryRegions(prep)
    closeAllPostgresConnections()
    tbl.regulatoryRegions <- expandRegulatoryRegionsTableByTF(prep, x[[fp.source]])
@@ -398,17 +398,17 @@ test_buildMultiModelGraph_twoModels_10k_span <- function(display=FALSE)
    tbl.geneModel.rf10 <- subset(tbl.geneModel, randomForest > 10)
    tbl.regulatoryRegions.rf10 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf10$tf)
 
+   tbl.geneModel.rf1 <- subset(tbl.geneModel, randomForest > 1)
+   tbl.regulatoryRegions.rf1 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf1$tf)
 
-   tbl.geneModel.rf3 <- subset(tbl.geneModel, randomForest > 3)
-   tbl.regulatoryRegions.rf3 <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.rf3$tf)
 
-
-   models <- list(rf03=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf3,  tbl.geneModel=tbl.geneModel.rf3),
+   models <- list(rf01=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf1,  tbl.geneModel=tbl.geneModel.rf1),
                   rf10=list(tbl.regulatoryRegions=tbl.regulatoryRegions.rf10, tbl.geneModel=tbl.geneModel.rf10)
                   )
 
-   #save(models, file="testModel.RData")
-   #load("testModel.RData")
+   #save(models, file="models.2.big.RData")
+   #load("models.2.big.RData")
+
 
    g <- buildMultiModelGraph(prep, models)
    nodesInGraph <- nodes(g)
@@ -425,7 +425,7 @@ test_buildMultiModelGraph_twoModels_10k_span <- function(display=FALSE)
 
    if(display){
      tViz <<- TrenaViz()
-     addGraph(tViz, g.lo, names(models))
+     httpAddGraph(tViz, g.lo, names(models))
      loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
      Sys.sleep(3); fit(tViz)
      browser()

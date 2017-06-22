@@ -11,6 +11,7 @@ export(
     Recipe,
     geneRegulatoryModelToGraph,
     addGraph,
+    httpAddGraph,
     loadStyle,
     addBedTrackFromDataFrame,
     addBedTrackFromHostedFile,

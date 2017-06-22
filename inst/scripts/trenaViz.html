@@ -1678,8 +1678,15 @@ function addGraph(msg)
 function httpAddGraph(msg)
 {
   console.log("=== entering httpAddGraph");
-  var filename = msg.payload;
+  var filename = msg.payload.graph;
   console.log("httpAdding graph '" + filename + "'");
+
+  var modelNames = msg.payload.modelNames;
+  console.log("    modelNames: " + modelNames.length);
+  if(modelNames.length > 1){
+     createModelNamesMenu(modelNames);
+     }
+
   status = addNetwork(filename);
   if (status=="success") {
      return_msg = {cmd: msg.callback, status: "success", callback: "", payload: ""};
