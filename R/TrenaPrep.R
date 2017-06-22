@@ -16,6 +16,8 @@ setGeneric('createGeneModel', signature='obj', function(obj,  solvers, tbl.regul
               standardGeneric('createGeneModel'))
 setGeneric('buildMultiModelGraph', signature='obj', function(obj, models) standardGeneric('buildMultiModelGraph'))
 setGeneric('addGeneModelLayout', signature='obj', function(obj, g, xPos.span=1500) standardGeneric('addGeneModelLayout'))
+setGeneric('assessSnp', signature='obj', function(obj, variant, shoulder, pwmMatchMinimumAsPercentage, genomeName="hg38")
+              standardGeneric('assessSnp'))
 #------------------------------------------------------------------------------------------------------------------------
 # a temporary hack: some constants
 genome.db.uri <- "postgres://bddsrds.globusgenomics.org/hg38"   # has gtf and motifsgenes tables
@@ -314,5 +316,51 @@ setMethod('addGeneModelLayout', 'TrenaPrep',
     g
 
     }) # addGeneModelLayout
+
+#------------------------------------------------------------------------------------------------------------------------
+setMethod('assessSnp', 'TrenaPrep',
+
+     function(obj, variant, shoulder, pwmMatchMinimumAsPercentage, genomeName="hg38"){
+
+        motifMatcher <- MotifMatcher(name=variant, genomeName=genomeName, quiet=TRUE)
+        tbl.variant <- TReNA:::.parseVariantString(motifMatcher, variant)
+        tbl.regions <- data.frame(chrom=tbl.variant$chrom,
+                                  start=tbl.variant$loc-shoulder,
+                                  end=tbl.variant$loc+shoulder,
+                                  stringsAsFactors=FALSE)
+        x.wt  <- findMatchesByChromosomalRegion(motifMatcher, tbl.regions,
+                                                pwmMatchMinimumAsPercentage=pwmMatchMinimumAsPercentage)
+        x.mut <- findMatchesByChromosomalRegion(motifMatcher, tbl.regions,
+                                                pwmMatchMinimumAsPercentage=pwmMatchMinimumAsPercentage,
+                                                variant=variant)
+
+        tbl <- rbind(x.wt$tbl[, c(1,12, 2,3,4,5,7,8,13)], x.mut$tbl[, c(1,12, 2,3,4,5,7,8,13)])
+        tbl <- tbl[order(tbl$motifName, tbl$motifRelativeScore, decreasing=TRUE),]
+        tbl$signature <- as.character(apply(as.matrix(tbl), 1, function(row) sprintf("%s;%s;%s", row[1], row[4], row[6])))
+        tbl <- tbl [, c(1,2,10,3:9)]
+
+        signatures.in.both <- intersect(subset(tbl, status=="mut")$signature, subset(tbl, status=="wt")$signature)
+        signatures.only.in.wt <- setdiff(subset(tbl, status=="wt")$signature, subset(tbl, status=="mut")$signature)
+        signatures.only.in.mut <- setdiff(subset(tbl, status=="mut")$signature, subset(tbl, status=="wt")$signature)
+
+        tbl$assessed <- rep("failed", nrow(tbl))
+
+        if(length(signatures.in.both) > 0) {
+           indices <- sort(unlist(lapply(signatures.in.both, function(sig) grep(sig, tbl$signature))))
+           tbl$assessed[indices] <- "in.both"
+           }
+
+        if(length(signatures.only.in.wt) > 0) {
+           indices <- sort(unlist(lapply(signatures.only.in.wt, function(sig) grep(sig, tbl$signature))))
+           tbl$assessed[indices] <- "wt.only"
+           }
+
+        if(length(signatures.only.in.mut) > 0) {
+           indices <- sort(unlist(lapply(signatures.only.in.mut, function(sig) grep(sig, tbl$signature))))
+           tbl$assessed[indices] <- "mut.only"
+           }
+
+        tbl[, c(1,2,11,8, 3:7,9:10)]
+        }) # assessSnp
 
 #------------------------------------------------------------------------------------------------------------------------

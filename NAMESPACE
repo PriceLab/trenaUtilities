@@ -31,7 +31,8 @@ export(
     getGeneModelTableColumnNames,
     expandRegulatoryRegionsTableByTF,
     createGeneModel,
-    buildMultiModelGraph
+    buildMultiModelGraph,
+    assessSnp
     )
 
 exportMethods(

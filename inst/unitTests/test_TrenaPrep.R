@@ -42,6 +42,7 @@ runTests <- function()
    test_buildMultiModelGraph_fiveModels()
    test_buildMultiModelGraph_twoModels_15k_span()
 
+   test_assessSnp()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -432,6 +433,34 @@ test_buildMultiModelGraph_twoModels_15k_span <- function(display=FALSE)
      }
 
 } # test_buildMultiModelGraph_fiveModels
+#------------------------------------------------------------------------------------------------------------------------
+test_assessSnp <- function()
+{
+   printf("--- test_assessSnp")
+   targetGene <- "AQP4"
+   aqp4.tss <- 26865884
+   fp.source <- "postgres://whovian/brain_hint_20"
+   sources <- list(fp.source)
+   prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+10000, regulatoryRegionSources=sources)
+
+   tbl.assay <- assessSnp(prep, "rs3875089", 10, pwmMatchMinimumAsPercentage=80)
+   tbl.changed <- subset(tbl.assay, assessed != "in.both")
+
+      # only 3 motifs, all in the same location (+/- 1 base) are broken,
+   checkEquals(nrow(tbl.changed), 3)
+   checkEquals(length(grep("TEAD1", tbl.changed$tf)), 3)
+   checkEquals(sort(tbl.changed$signature), c("MA0090.2;26865465;+", "MA0808.1;26865466;+", "MA0809.1;26865465;+"))
+
+      # now lets look deeper and see how bad the mut sequence scored
+   tbl.assay.deeper <- assessSnp(prep, "rs3875089", 10, pwmMatchMinimumAsPercentage=50)
+   tbl.toCompare <- subset(tbl.assay.deeper, signature %in% tbl.changed$signature)
+   wt.mean.match.score  <- mean(subset(tbl.toCompare, status=="wt")$motifRelativeScore)  # [1] 0.8201358
+   mut.mean.match.score <- mean(subset(tbl.toCompare, status=="mut")$motifRelativeScore) # [1] 0.6746936
+      # > 20% drop off in match
+   dropOff <- abs((mut.mean.match.score - wt.mean.match.score)/mut.mean.match.score)
+   checkTrue(dropOff > 0.20)
+
+} # test_assessSnp
 #------------------------------------------------------------------------------------------------------------------------
 if(!interactive())
    runTests()
