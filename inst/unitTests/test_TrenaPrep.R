@@ -382,7 +382,7 @@ test_buildMultiModelGraph_fiveModels <- function(display=FALSE)
 #------------------------------------------------------------------------------------------------------------------------
 test_buildMultiModelGraph_twoModels_15k_span <- function(display=FALSE)
 {
-   printf("--- test_buildMultiModelGraph_twoModels_10k_span")
+   printf("--- test_buildMultiModelGraph_twoModels_15k_span")
    targetGene <- "AQP4"
    aqp4.tss <- 26865884
    fp.source <- "postgres://whovian/brain_hint_20"
