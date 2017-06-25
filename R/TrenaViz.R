@@ -77,11 +77,17 @@ setMethod('httpAddGraph', 'TrenaViz',
   function (obj, graph, modelNames=list()) {
      printf("TrenaViz::httpAddGraph");
      print(graph)
-     g.json <- paste("network = ", .graphToJSON(graph))
+     printf("--- converting graph to JSON");
+     g.json <- .graphToJSON(graph)
+     printf("--- conversion complete");
+     #g.json <- paste("network = ", .graphToJSON(graph))
      #g.json <- paste("network = ", as.character(biocGraphToCytoscapeJSON(graph)))
      filename <- "g.json"
      payload <- list(graph=filename, modelNames=modelNames)
+     printf("--- about to write file 'g.json' with %d characters", nchar(g.json))
+     printf("--- first few characters: %s", substr(g.json, 1, 20))
      write(g.json, file=filename)
+     printf("--- file writing complete")
      send(obj, list(cmd="httpAddGraph", callback="handleResponse", status="request",
                     payload=payload))
      while (!browserResponseReady(obj)){

@@ -1658,7 +1658,6 @@ function addGraph(msg)
 {
   console.log("=== entering addGraph");
   var network = JSON.parse(msg.payload.graph);
-
   var modelNames = msg.payload.modelNames;
   console.log("    modelNames: " + modelNames.length);
   if(modelNames.length > 1){
@@ -1687,7 +1686,9 @@ function httpAddGraph(msg)
      createModelNamesMenu(modelNames);
      }
 
-  status = addNetwork(filename);
+  status = readNetworkFromFile(filename);
+  //status = "no action right now"
+
   if (status=="success") {
      return_msg = {cmd: msg.callback, status: "success", callback: "", payload: ""};
      }
@@ -1698,6 +1699,47 @@ function httpAddGraph(msg)
   hub.send(return_msg);
 
 } // httpAddGraph
+//----------------------------------------------------------------------------------------------------
+readNetworkFromFile = function (filename)
+{
+   var s = window.location.href + "?" + filename;
+   fetch(s)
+      .then(function(responseObj){
+          console.log("fetch in action");
+          return responseObj.json();
+          })
+     .then(function(j){
+         cy.json(j);
+         return "success";
+         });
+
+    return "SUCCESS";
+
+} // readNetworkFromFile
+//----------------------------------------------------------------------------------------------------
+old_readNetworkFromFile = function (filename)
+{
+   var s = window.location.href + "?" + filename;
+   console.log("=== readNetworkFromFile about to getScript on " + s);
+   $.getScript(s)
+     .done(function(script, textStatus) {
+         //console.log("getScript: " + textStatus);
+         //console.log("nodes: " + network.elements.nodes.length);
+         //if(typeof(network.elements.edges) != "undefined")
+         //  console.log("edges: " + network.elements.edges.length);
+         cy.add(network.elements);  // no positions yet
+         cy.nodes().map(function(node){node.data({degree: node.degree()})});
+         //cy.edges().style({"display": "none"});  // default hide edges for now
+         //cy.elements().qtip(qtipOptions());
+         return("success");
+         }) // .done
+    .fail(function(jqxhr, settings, exception) {
+       var msg = "addNetwork getscript error trying to read " + filename;
+       console.log(msg);
+       return(msg);
+      });
+
+} // old_readNetworkFromFile
 //----------------------------------------------------------------------------------------------------
 function httpSetStyle(msg)
 {
@@ -1888,30 +1930,6 @@ function loadStyle(filename)
        });
 
 } // loadStyle
-//----------------------------------------------------------------------------------------------------
-addNetwork = function (filename)
-{
-   var s = window.location.href + "?" + filename;
-   console.log("=== about to getScript on " + s);
-   $.getScript(s)
-     .done(function(script, textStatus) {
-         //console.log("getScript: " + textStatus);
-         //console.log("nodes: " + network.elements.nodes.length);
-         //if(typeof(network.elements.edges) != "undefined")
-         //  console.log("edges: " + network.elements.edges.length);
-         cy.add(network.elements);  // no positions yet
-         cy.nodes().map(function(node){node.data({degree: node.degree()})});
-         //cy.edges().style({"display": "none"});  // default hide edges for now
-         //cy.elements().qtip(qtipOptions());
-         return("success");
-         }) // .done
-    .fail(function(jqxhr, settings, exception) {
-       var msg = "addNetwork getscript error trying to read " + filename;
-       console.log(msg);
-       return(msg);
-      });
-
-} // addNetwork
 //----------------------------------------------------------------------------------------------------
 function setEdgeRenderingMethod(newMethod)
 {

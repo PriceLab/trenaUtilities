@@ -303,11 +303,18 @@ setMethod('addGeneModelLayout', 'TrenaPrep',
 
     for(tf in tfs){
        footprint.neighbors <- edges(g)[[tf]]
-       footprint.positions <- as.integer(nodeData(g, footprint.neighbors, attr="xPos"))
-       new.xPos <- mean(footprint.positions)
-       #printf("%8s: %5d", tf, new.xPos)
-       nodeData(g, tf, "xPos") <- new.xPos
+       if(length(footprint.neighbors) > 0){
+          footprint.positions <- as.integer(nodeData(g, footprint.neighbors, attr="xPos"))
+          new.xPos <- mean(footprint.positions)
+          if(is.na(new.xPos)) browser()
+          if(is.nan(new.xPos)) browser()
+          #printf("%8s: %5d", tf, new.xPos)
+          }
+       else{
+          new.xPos <- 0
+          }
        nodeData(g, tf, "yPos") <- sample(300:1200, 1)
+       nodeData(g, tf, "xPos") <- new.xPos
        } # for tf
 
     nodeData(g, targetGene.nodes, "xPos") <- 0

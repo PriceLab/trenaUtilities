@@ -42,6 +42,8 @@ runTests <- function()
    test_buildMultiModelGraph_fiveModels()
    test_buildMultiModelGraph_twoModels_15k_span()
 
+   test_geneModelLayout();
+
    test_assessSnp()
 
 } # runTests
@@ -283,11 +285,10 @@ test_buildMultiModelGraph_oneModel <- function(display=FALSE)
    tbl.regulatoryRegions <- expandRegulatoryRegionsTableByTF(prep, x[[fp.source]])
 
    tbl.geneModel <- createGeneModel(prep, "randomForest", tbl.regulatoryRegions, mtx)
-   tbl.strong <- subset(tbl.geneModel, randomForest > 3)
-   tbl.regulatoryRegions.strong <- subset(tbl.regulatoryRegions, tf %in% tbl.strong$tf)
+   tbl.geneModel.strong <- subset(tbl.geneModel, randomForest > 3)
+   tbl.regulatoryRegions.strong <- subset(tbl.regulatoryRegions, tf %in% tbl.geneModel.strong$tf)
 
-   models <- list(rf3=list(tbl.regulatoryRegions=tbl.regulatoryRegions.strong,
-                           tbl.geneModel=tbl.strong))
+   models <- list(rf3=list(tbl.regulatoryRegions=tbl.regulatoryRegions.strong, tbl.geneModel=tbl.geneModel.strong))
 
    #save(models, file="testModel.RData")
    #load("testModel.RData")
@@ -307,7 +308,7 @@ test_buildMultiModelGraph_oneModel <- function(display=FALSE)
 
    if(display){
      tViz <<- TrenaViz()
-     addGraph(tViz, g.lo, names(models))
+     httpAddGraph(tViz, g.lo, names(models))
      loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
      Sys.sleep(3); fit(tViz)
      browser()
@@ -372,7 +373,7 @@ test_buildMultiModelGraph_fiveModels <- function(display=FALSE)
 
    if(display){
      tViz <<- TrenaViz()
-     addGraph(tViz, g.lo, names(models))
+     httpAddGraph(tViz, g.lo, names(models))
      loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
      Sys.sleep(3); fit(tViz)
      browser()
@@ -433,6 +434,23 @@ test_buildMultiModelGraph_twoModels_15k_span <- function(display=FALSE)
      }
 
 } # test_buildMultiModelGraph_fiveModels
+#------------------------------------------------------------------------------------------------------------------------
+test_geneModelLayout <- function()
+{
+   printf("--- test_geneModelLayout")
+   load("testModel.Rdata")
+   print(load("ohsu.aqp4.graphLayoutNaNBug.input.RData"))
+   # g <- buildMultiModelGraph(prep, models)
+   targetGene <- "AQP4"
+   aqp4.tss <- 26865884
+   fp.source <- "postgres://whovian/brain_hint_20"
+   sources <- list(fp.source)
+
+   prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+10000, regulatoryRegionSources=sources)
+
+   g.lo <- addGeneModelLayout(prep, g, xPos.span=1500)
+
+} # test_geneModelLayout
 #------------------------------------------------------------------------------------------------------------------------
 test_assessSnp <- function()
 {
