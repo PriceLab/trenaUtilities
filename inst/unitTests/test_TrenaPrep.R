@@ -1,6 +1,7 @@
 library(TrenaHelpers)
 library(RPostgreSQL)   # TODO: part of the nasty hack.  remove
 library(RUnit)
+library(SNPlocs.Hsapiens.dbSNP144.GRCh38)   # load here so that it is ready when needed
 #------------------------------------------------------------------------------------------------------------------------
 if(!exists("mtx")){
    load("~/github/projects/examples/microservices/trenaGeneModel/datasets/coryAD/rosmap_counts_matrix_normalized_geneSymbols_25031x638.RData")
@@ -478,7 +479,31 @@ test_assessSnp <- function()
    dropOff <- abs((mut.mean.match.score - wt.mean.match.score)/mut.mean.match.score)
    checkTrue(dropOff > 0.20)
 
+   suppressWarnings(tbl.assay.short <- assessSnp(prep, "rs3875089", 3, pwmMatchMinimumAsPercentage=95))
+   checkEquals(nrow(tbl.assay.short), 0)
+
 } # test_assessSnp
+#------------------------------------------------------------------------------------------------------------------------
+# in preparation for adding, and ongoing testing of, a delta column for all entries, here we use a snp which at the 80%
+# match level # returns all three kinds of match: in.both. wt.only, mut.only
+test_assessSnp_mutOnly_wtOnly <- function()
+{
+   printf("--- test_assessSnp_mutOnly_wtOnly")
+
+   snp <- "rs3763043"
+   targetGene <- "AQP4"
+   aqp4.tss <- 26865884
+   fp.source <- "postgres://whovian/brain_hint_20"
+   sources <- list(fp.source)
+   prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+10000, regulatoryRegionSources=sources)
+
+   tbl.assay <- assessSnp(prep, snp, shoulder=10, pwmMatchMinimumAsPercentage=80)
+   checkEquals(ncol(tbl.assay), 12)
+   checkTrue("delta" %in% colnames(tbl.assay))
+   checkEqualsNumeric(min(tbl.assay$delta), -0.0487, tol=1e-3)
+   checkEqualsNumeric(max(tbl.assay$delta),  0.165, tol=1e-2)
+
+} # test_assessSnp_mutOnly_wtOnly
 #------------------------------------------------------------------------------------------------------------------------
 if(!interactive())
    runTests()

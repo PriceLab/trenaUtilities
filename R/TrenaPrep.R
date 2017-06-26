@@ -337,13 +337,32 @@ setMethod('assessSnp', 'TrenaPrep',
                                   stringsAsFactors=FALSE)
         x.wt  <- findMatchesByChromosomalRegion(motifMatcher, tbl.regions,
                                                 pwmMatchMinimumAsPercentage=pwmMatchMinimumAsPercentage)
+        if(nrow(x.wt$tbl) == 0){
+           warning(sprintf("no motifs found in reference sequence in neighborhood of %s with shoulder %d",
+                           variant, shoulder))
+           return(data.frame())
+           }
+
+
         x.mut <- findMatchesByChromosomalRegion(motifMatcher, tbl.regions,
                                                 pwmMatchMinimumAsPercentage=pwmMatchMinimumAsPercentage,
                                                 variant=variant)
 
+
+
+        if(nrow(x.mut$tbl) == 0){
+           warning(sprintf("no motifs altered by %s with shoulder %d", variant, shoulder))
+           return(data.frame())
+           }
+
+        tbl.wt.50 <- findMatchesByChromosomalRegion(motifMatcher, tbl.regions, 50)$tbl
+        tbl.wt.50$signature <- sprintf("%s;%s;%s", tbl.wt.50$motifName, tbl.wt.50$motifStart, tbl.wt.50$strand)
+        tbl.mut.50 <- findMatchesByChromosomalRegion(motifMatcher, tbl.regions, 50, variant=variant)$tbl
+        tbl.mut.50$signature <- sprintf("%s;%s;%s", tbl.mut.50$motifName, tbl.mut.50$motifStart, tbl.mut.50$strand)
+
         tbl <- rbind(x.wt$tbl[, c(1,12, 2,3,4,5,7,8,13)], x.mut$tbl[, c(1,12, 2,3,4,5,7,8,13)])
         tbl <- tbl[order(tbl$motifName, tbl$motifRelativeScore, decreasing=TRUE),]
-        tbl$signature <- as.character(apply(as.matrix(tbl), 1, function(row) sprintf("%s;%s;%s", row[1], row[4], row[6])))
+        tbl$signature <- sprintf("%s;%s;%s", tbl$motifName, tbl$motifStart, tbl$strand)
         tbl <- tbl [, c(1,2,10,3:9)]
 
         signatures.in.both <- intersect(subset(tbl, status=="mut")$signature, subset(tbl, status=="wt")$signature)
@@ -367,7 +386,35 @@ setMethod('assessSnp', 'TrenaPrep',
            tbl$assessed[indices] <- "mut.only"
            }
 
-        tbl[, c(1,2,11,8, 3:7,9:10)]
+        tbl$delta <- 0
+
+           # find the mut scores for each of the "wt.only" entries, subtract from the wt score
+        tbl.wt.only  <- subset(tbl, assessed=="wt.only", select=c(signature, motifRelativeScore))
+        if(nrow(tbl.wt.only) > 0){
+           sigs <- tbl.wt.only$signature
+           tbl.mut.scores <- subset(tbl.mut.50, signature %in% sigs, select=c(signature, motifRelativeScore))
+           deltas <- unlist(lapply(sigs, function(sig){wt.score  <- subset(tbl.wt.only, signature==sig)$motifRelativeScore;
+                                                mut.score <- subset(tbl.mut.scores, signature==sig)$motifRelativeScore;
+                                                delta <- wt.score - mut.score
+                                                }))
+           tbl$delta[match(sigs, tbl$signature)] <- deltas
+           } # if some wt.only entries
+
+           # find the wt scores for each of the "mut.only" entries, subtract from the mut score
+        tbl.mut.only  <- subset(tbl, assessed=="mut.only", select=c(signature, motifRelativeScore))
+        sigs <- tbl.mut.only$signature
+        tbl.wt.scores <- subset(tbl.wt.50, signature %in% sigs, select=c(signature, motifRelativeScore))
+        deltas <- unlist(lapply(sigs, function(sig){mut.score  <- subset(tbl.mut.only, signature==sig)$motifRelativeScore;
+                                                    wt.score <- subset(tbl.wt.scores, signature==sig)$motifRelativeScore;
+                                                    delta <- wt.score - mut.score
+                                                 }))
+        tbl$delta[match(sigs, tbl$signature)] <- deltas
+        coi <-  c("motifName", "status", "assessed", "motifRelativeScore", "delta",
+                  "signature", "chrom", "motifStart", "motifEnd", "strand",
+                  "match", "tf")
+
+        tbl[, coi]
+
         }) # assessSnp
 
 #------------------------------------------------------------------------------------------------------------------------
