@@ -55,12 +55,39 @@
    height: 25px;
    }
 
+th,td {
+   white-space: nowrap;
+   font-size:16px;
+   }
+
+#strucuterCyMenubarDiv{
+  background-color: #E8E8E4;
+  height: 30px"
+  }
+
+#structureCyjsDiv{
+   float:left;
+   width:68%;
+   height: 800px;;
+   background-color: #EEE;
+   border: 1px solid gray;
+  }
+
+#structureTableDiv{
+   float:right;
+   width:30%;
+   height: 98%;
+   background-color:lightgreen;
+   border: 1px solid gray;
+   }
+
 </style>
 
 <script>
 //----------------------------------------------------------------------------------------------------
 // keep these outside of module scope so they can be manipulated in the console
 var cy;
+var structureCy;
 var igv;
 
 var TrenaVizModule = (function(){
@@ -80,11 +107,48 @@ function setHub(newHub)
 
 } // setHub
 //----------------------------------------------------------------------------------------------------
-function initializeCytoscape()
+function initializeTrnCytoscape()
 {
-   options = {container: $("#cyDiv"),
-              //elements: {nodes: [{data: {id:'a'}}],
-              //           edges: [{data:{source:'a', target:'a'}}]},
+  var options = {container: $("#cyDiv"),
+                 elements: {nodes: [{data: {id:'a'}}],
+                            edges: [{data:{source:'a', target:'a'}}]},
+                 style: cytoscape.stylesheet()
+                 .selector('node').style({'background-color': '#ddd',
+                                          'label': 'data(id)',
+                                          'text-valign': 'center',
+                                          'text-halign': 'center',
+                                          'border-width': 1})
+                 .selector('node:selected').style({'overlay-opacity': 0.2,
+                                                   'overlay-color': 'gray'})
+                 .selector('edge').style({'line-color': 'black',
+                                          'target-arrow-shape': 'triangle',
+                                          'target-arrow-color': 'black',
+                                          'curve-style': 'bezier'})
+                 .selector('edge:selected').style({'overlay-opacity': 0.2,
+                                                   'overlay-color': 'gray'})
+                };
+
+   cy = cytoscape(options);
+   return(this)
+
+} // initializeTrnCytoscape
+//----------------------------------------------------------------------------------------------------
+function initializeTrnCytoscapeButtons(self)
+{
+   $("#cyFitButton").click(function(){cy.fit(50)});
+   $("#cyFitSelectedButton").click(function(){cy.fit(cy.nodes(":selected"), 50)});
+   $("#cySFNButton").click(function(){cy.nodes(':selected').neighborhood().nodes().select()});
+   $("#cyHideUnselectedButton").click(function(){cy.nodes(":unselected").hide()});
+   $("#cyShowAllButton").click(function(){cy.nodes().show(); cy.edges().show()});
+   $("#cyCycleThroughModelsButton").click(function(){nextCyModel("rs3875089")});
+
+} // initializeTrnCytoscapeButtons
+//----------------------------------------------------------------------------------------------------
+function initializeStructureCytoscape()
+{
+   var options = {container: $("#structureCyjsDiv"),
+              elements: {nodes: [{data: {id:'a'}}],
+                         edges: [{data:{source:'a', target:'a'}}]},
               style: cytoscape.stylesheet()
                        .selector('node').style({'background-color': '#ddd',
                                                 'label': 'data(id)',
@@ -99,23 +163,27 @@ function initializeCytoscape()
                                                 'curve-style': 'bezier'})
                        .selector('edge:selected').style({'overlay-opacity': 0.2,
                                                          'overlay-color': 'gray'})
-             };
+                 };
 
-   cy = cytoscape(options);
+   console.log("---- about to create structureCy, options:");
+   console.log(options)
+   structureCy = cytoscape(options);
+   structureCy.fit()
+
    return(this)
 
-} // initializeCytoscape
+} // initializeStructureCytoscape
 //----------------------------------------------------------------------------------------------------
-function initializeCytoscapeButtons(self)
+function initializeStructureCytoscapeButtons(self)
 {
-   $("#cyFitButton").click(function(){cy.fit(50)});
-   $("#cyFitSelectedButton").click(function(){cy.fit(cy.nodes(":selected"), 50)});
-   $("#cySFNButton").click(function(){cy.nodes(':selected').neighborhood().nodes().select()});
-   $("#cyHideUnselectedButton").click(function(){cy.nodes(":unselected").hide()});
-   $("#cyShowAllButton").click(function(){cy.nodes().show(); cy.edges().show()});
-   $("#cyCycleThroughModelsButton").click(function(){nextCyModel("rs3875089")});
+   $("#structureCyFitButton").click(function(){structureCy.fit(50)});
+   $("#structureCyFitSelectedButton").click(function(){structureCy.fit(structureCy.nodes(":selected"), 50)});
+   $("#structureCySFNButton").click(function(){structureCy.nodes(':selected').neighborhood().nodes().select()});
+   $("#structureCyHideUnselectedButton").click(function(){structureCy.nodes(":unselected").hide()});
+   $("#structureCyShowAllButton").click(function(){structureCy.nodes().show(); structureCy.edges().show()});
+   $("#structureCyCycleThroughModelsButton").click(function(){nextCyModel("rs3875089")});
 
-} // initializeCytoscapeButtons
+} // initializeStructureCytoscapeButtons
 //----------------------------------------------------------------------------------------------------
 function initializeUI()
 {
@@ -124,6 +192,17 @@ function initializeUI()
    console.log(this);
 
    trenaVizDiv = $("#trenaVizDiv");
+
+   cyDiv = $("#cyDiv")
+   setTimeout(function(){initializeIGV();}, 0);
+   self = initializeTrnCytoscape();
+   initializeTrnCytoscapeButtons(self);
+
+   //options = {container: $('#structureCyjsDiv'), elements:{nodes:[{data:{id:'a'}}], edges:[{data:{source:'a', target:'a'}}]}}
+   //cytoscape(options);
+   //setTimeout(function(){cytoscape(options);}, 0);
+   cyjsStructure = initializeStructureCytoscape()
+   initializeStructureCytoscapeButtons(cyjsStructure);
 
    trenaVizDiv.tabs({
      activate: function(event, ui){
@@ -144,11 +223,6 @@ function initializeUI()
         }
      });
 
-   cyDiv = $("#cyDiv")
-   setTimeout(function(){initializeIGV();}, 0);
-   //initializeIGV();
-   self = initializeCytoscape();
-   initializeCytoscapeButtons(self);
    $(window).resize(handleWindowResize);
    handleWindowResize();
    console.log("--- trenaViz, initializeUI");
@@ -220,7 +294,7 @@ function initializeIGV()
          trenaViz.chromLocString = chromLocString;
          });
 
-   console.log("after createBrowser");
+   console.log("after igv createBrowser");
 
 } // initializeIGV
 //-----------------------------------------------------------------------------------------------------
@@ -1974,8 +2048,9 @@ hub.start();
 <div id="trenaVizDiv">
   <ul>
     <li><a href="#igvDiv">IGV</a></li>
-    <li><a href="#cyOuterDiv">Network</a></li>
-    <li><a href="#modelDiv">Model</a></li>
+    <li><a href="#cyOuterDiv">TRN</a></li>
+    <li><a href="#structureDiv">Structure</a></li>
+    <li><a href="#modelDiv">Tablular Data</a></li>
   </ul>
 
 
@@ -1989,13 +2064,41 @@ hub.start();
          <button id='cyCycleThroughModelsButton' class="cyMenuButton">Cycle Models</button>
      </div>
      <div id="cyDiv"></div>
-     <div id="categoryDiv"></div>
   </div>
 
   <div id="igvDiv"> </div>
+
+  <div id="structureDiv">
+     <div id="structureCyOuterDiv">
+     <div id="structureCyMenubarDiv">
+         <button id='structureCyFitButton' class="cyMenuButton">Fit</button>
+         <button id='structureCyFitSelectedButton'class="cyMenuButton">Fit Selected</button>
+         <button id='structureCySFNButton' class="cyMenuButton">SFN</button>
+         <button id='structureCyHideUnselectedButton' class="cyMenuButton">Hide Unselected</button>
+         <button id='structureCyShowAllButton' class="cyMenuButton">Show All</button>
+     </div>
+     <div id="structureCyjsDiv"></div>
+     <div id="structureTableDiv">
+       <table id="dataTable" class="display" width="100%">
+         <thead>
+           <tr>
+             <th>Term</th>
+             <th>Count</th>
+             <th>p-value</th>
+             <th>ID</th>
+           </tr>
+         </thead>
+       </table>
+    </div>
+
+
+     </div>
+  </div>
+
   <div id="modelDiv">
     tabular view coming soon
   </div>
+
 </div>
 </body>
 </html>
