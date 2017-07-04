@@ -189,10 +189,10 @@ function initializeIGV()
      //    },
      tracks: [
         {name: 'Gencode v24',
-         //url: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz",
-         //indexURL: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz.tbi",
-         url: "//s3.amazonaws.com/igv.broadinstitute.org/annotations/hg38/genes/gencode.v24.annotation.sorted.gtf.gz",
-         indexURL: "//s3.amazonaws.com/igv.broadinstitute.org/annotations/hg38/genes/gencode.v24.annotation.sorted.gtf.gz.tbi",
+         url: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz",
+         indexURL: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz.tbi",
+         //url: "//s3.amazonaws.com/igv.broadinstitute.org/annotations/hg38/genes/gencode.v24.annotation.sorted.gtf.gz",
+         //indexURL: "//s3.amazonaws.com/igv.broadinstitute.org/annotations/hg38/genes/gencode.v24.annotation.sorted.gtf.gz.tbi",
          format: 'gtf',
          visibilityWindow: 2000000,
          displayMode: 'EXPANDED'
@@ -1989,6 +1989,7 @@ hub.start();
          <button id='cyCycleThroughModelsButton' class="cyMenuButton">Cycle Models</button>
      </div>
      <div id="cyDiv"></div>
+     <div id="categoryDiv"></div>
   </div>
 
   <div id="igvDiv"> </div>
