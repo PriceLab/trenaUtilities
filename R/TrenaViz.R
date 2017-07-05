@@ -11,10 +11,13 @@ printf <- function(...) print(noquote(sprintf(...)))
 #----------------------------------------------------------------------------------------------------
 setGeneric('addGraph',         signature='obj', function(obj, graph, modelNames=list()) standardGeneric ('addGraph'))
 setGeneric('httpAddGraph',     signature='obj', function(obj, graph, modelNames=list()) standardGeneric ('httpAddGraph'))
+setGeneric('httpAddStructureGraph',     signature='obj', function(obj, graph, modelNames=list()) standardGeneric ('httpAddStructureGraph'))
 setGeneric('loadStyle',        signature='obj', function(obj, filename) standardGeneric ('loadStyle'))
+setGeneric('loadStructureStyle',        signature='obj', function(obj, filename) standardGeneric ('loadStructureStyle'))
 setGeneric('fit',              signature='obj', function(obj, padding=30) standardGeneric('fit'))
 setGeneric('fitSelected',      signature='obj', function(obj, padding=30) standardGeneric('fitSelectedContent'))
 setGeneric('selectNodes',      signature='obj', function(obj, nodeIDs) standardGeneric('selectNodes'))
+setGeneric('selectStructureNodes',      signature='obj', function(obj, nodeIDs) standardGeneric('selectStructureNodes'))
 setGeneric('getSelectedNodes', signature='obj', function(obj) standardGeneric('getSelectedNodes'))
 setGeneric('clearSelection',   signature='obj', function(obj) standardGeneric('clearSelection'))
 setGeneric('sfn',              signature='obj', function(obj) standardGeneric('sfn'))
@@ -98,11 +101,50 @@ setMethod('httpAddGraph', 'TrenaViz',
      })
 
 #----------------------------------------------------------------------------------------------------
+setMethod('httpAddStructureGraph', 'TrenaViz',
+
+  function (obj, graph, modelNames=list()) {
+     printf("TrenaViz::httpAddStructureGraph");
+     print(graph)
+     printf("--- converting graph to JSON");
+     g.json <- .graphToJSON(graph)
+     printf("--- conversion complete");
+     #g.json <- paste("network = ", .graphToJSON(graph))
+     #g.json <- paste("network = ", as.character(biocGraphToCytoscapeJSON(graph)))
+     filename <- "g.json"
+     payload <- list(graph=filename, modelNames=modelNames)
+     printf("--- about to write file 'g.json' with %d characters", nchar(g.json))
+     printf("--- first few characters: %s", substr(g.json, 1, 20))
+     write(g.json, file=filename)
+     printf("--- file writing complete")
+     send(obj, list(cmd="httpAddStructureGraph", callback="handleResponse", status="request",
+                    payload=payload))
+     while (!browserResponseReady(obj)){
+        Sys.sleep(.1)
+        }
+     printf("browserResponseReady")
+     getBrowserResponse(obj);
+     })
+
+#----------------------------------------------------------------------------------------------------
 setMethod('loadStyle', 'TrenaViz',
 
   function (obj, filename) {
      printf("TrenaViz::loadStyle");
      send(obj, list(cmd="httpSetStyle", callback="handleResponse", status="request", payload=filename))
+     while (!browserResponseReady(obj)){
+        Sys.sleep(.1)
+        }
+     printf("browserResponseReady")
+     getBrowserResponse(obj);
+     })
+
+#----------------------------------------------------------------------------------------------------
+setMethod('loadStructureStyle', 'TrenaViz',
+
+  function (obj, filename) {
+     printf("TrenaViz::loadStructureStyle");
+     send(obj, list(cmd="httpSetStructureStyle", callback="handleResponse", status="request", payload=filename))
      while (!browserResponseReady(obj)){
         Sys.sleep(.1)
         }
@@ -197,6 +239,19 @@ setMethod('selectNodes', 'TrenaViz',
   function (obj, nodeIDs) {
      payload <- list(nodeIDs=nodeIDs)
      send(obj, list(cmd="selectNodes", callback="handleResponse", status="request", payload=payload))
+     while (!browserResponseReady(obj)){
+        Sys.sleep(.1)
+        }
+     printf("browserResponseReady")
+     getBrowserResponse(obj);
+     })
+
+#----------------------------------------------------------------------------------------------------
+setMethod('selectStructureNodes', 'TrenaViz',
+
+  function (obj, nodeIDs) {
+     payload <- list(nodeIDs=nodeIDs)
+     send(obj, list(cmd="selectStructureNodes", callback="handleResponse", status="request", payload=payload))
      while (!browserResponseReady(obj)){
         Sys.sleep(.1)
         }

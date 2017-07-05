@@ -9,6 +9,8 @@
    <!-- script src="http://pshannon.systemsbiology.net/js/cytoscape-3.0.0.js"></script -->
    <script src="https://cdn.rawgit.com/paul-shannon/CDN/master/js/cytoscape-3.0.0.js"></script>
    <script src="https://cdn.rawgit.com/paul-shannon/CDN/master/js/BrowserViz.js"></script>
+   <script type="text/javascript" language="javascript" src="http://cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
+   <link rel="stylesheet" type="text/css" href="http://cdn.datatables.net/1.10.7/css/jquery.dataTables.css">
 
   <script src='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css"/>
@@ -42,7 +44,8 @@
   background-color: #F8F8F8;
   margin-top: 5px;
   margin: 1px;
-  width: 100%; height: 98%
+  width: 100%;
+  height: 98%
   }
 
 #cyMenubarDiv{
@@ -68,7 +71,7 @@ th,td {
 #structureCyjsDiv{
    float:left;
    width:68%;
-   height: 800px;;
+   height: 90%;
    background-color: #EEE;
    border: 1px solid gray;
   }
@@ -76,7 +79,7 @@ th,td {
 #structureTableDiv{
    float:right;
    width:30%;
-   height: 98%;
+   height: 90%;
    background-color:lightgreen;
    border: 1px solid gray;
    }
@@ -90,11 +93,44 @@ var cy;
 var structureCy;
 var igv;
 
+var goData = [{"Term":"immune system process","Count":135,"Pvalue":6.1957e-56,"GOBPID":"GO:0002376"},
+              {"Term":"immune response","Count":111,"Pvalue":2.5698e-54,"GOBPID":"GO:0006955"},
+              {"Term":"regulation of immune system process","Count":97,"Pvalue":8.4143e-47,"GOBPID":"GO:0002682"},
+              {"Term":"positive regulation of immune system process","Count":81,"Pvalue":3.3387e-44,"GOBPID":"GO:0002684"},
+              {"Term":"regulation of immune response","Count":78,"Pvalue":9.2352e-43,"GOBPID":"GO:0050776"},
+              {"Term":"defense response","Count":93,"Pvalue":7.8254e-39,"GOBPID":"GO:0006952"},
+              {"Term":"positive regulation of immune response","Count":65,"Pvalue":4.0329e-38,"GOBPID":"GO:0050778"},
+              {"Term":"leukocyte activation","Count":64,"Pvalue":5.9603e-34,"GOBPID":"GO:0045321"},
+              {"Term":"cell activation","Count":67,"Pvalue":1.6972e-31,"GOBPID":"GO:0001775"},
+              {"Term":"activation of immune response","Count":52,"Pvalue":2.3592e-30,"GOBPID":"GO:0002253"},
+              {"Term":"immune response-regulating signaling pathway","Count":49,"Pvalue":3.4925e-28,"GOBPID":"GO:0002764"},
+              {"Term":"immune effector process","Count":56,"Pvalue":7.3814e-28,"GOBPID":"GO:0002252"},
+              {"Term":"immune response-activating signal transduction","Count":47,"Pvalue":1.4628e-27,"GOBPID":"GO:0002757"},
+              {"Term":"cytokine production","Count":52,"Pvalue":1.7288e-26,"GOBPID":"GO:0001816"},
+              {"Term":"inflammatory response","Count":53,"Pvalue":2.4288e-26,"GOBPID":"GO:0006954"},
+              {"Term":"lymphocyte activation","Count":52,"Pvalue":3.1995e-26,"GOBPID":"GO:0046649"},
+              {"Term":"regulation of leukocyte activation","Count":45,"Pvalue":6.589e-26,"GOBPID":"GO:0002694"},
+              {"Term":"regulation of cytokine production","Count":49,"Pvalue":1.2028e-25,"GOBPID":"GO:0001817"},
+              {"Term":"positive regulation of response to stimulus","Count":88,"Pvalue":1.2446e-25,"GOBPID":"GO:0048584"},
+              {"Term":"regulation of cell activation","Count":46,"Pvalue":1.434e-25,"GOBPID":"GO:0050865"},
+              {"Term":"innate immune response","Count":57,"Pvalue":6.4041e-25,"GOBPID":"GO:0045087"},
+              {"Term":"response to stimulus","Count":187,"Pvalue":2.68e-24,"GOBPID":"GO:0050896"},
+              {"Term":"regulation of response to stimulus","Count":118,"Pvalue":4.5758e-24,"GOBPID":"GO:0048583"},
+              {"Term":"leukocyte cell-cell adhesion","Count":44,"Pvalue":6.8389e-24,"GOBPID":"GO:0007159"},
+              {"Term":"leukocyte aggregation","Count":42,"Pvalue":3.3461e-23,"GOBPID":"GO:0070486"},
+              {"Term":"immune response-regulating cell surface receptor signaling pathway","Count":38,"Pvalue":1.1266e-22,"GOBPID":"GO:0002768"},
+              {"Term":"leukocyte migration","Count":38,"Pvalue":1.2442e-22,"GOBPID":"GO:0050900"},
+              {"Term":"immune response-activating cell surface receptor signaling pathway","Count":36,"Pvalue":4.4185e-22,"GOBPID":"GO:0002429"},
+              {"Term":"positive regulation of cytokine production","Count":38,"Pvalue":4.832e-22,"GOBPID":"GO:0001819"},
+              {"Term":"response to stress","Count":115,"Pvalue":1.0166e-21,"GOBPID":"GO:0006950"}];
+
+
 var TrenaVizModule = (function(){
 
   var chromLocString = "chr1:0-0";
   var trenaVizDiv;
   var cyDiv;
+  var structureCyjsDiv;
   var vizmaps = [];
   var graph;
 
@@ -185,6 +221,37 @@ function initializeStructureCytoscapeButtons(self)
 
 } // initializeStructureCytoscapeButtons
 //----------------------------------------------------------------------------------------------------
+function initializeStructureDataTable()
+{
+    $("#structureDataTable").DataTable( {
+        scrollX: true,
+        scrollY: 400,
+        data: goData,
+    "bPaginate": false,
+    "bLengthChange": false,
+    "bFilter": true,
+    "bInfo": false,
+    "bAutoWidth": false,
+
+        columns: [
+            {data: "Term"},
+            {data: "Count"},
+            {data: "Pvalue"},
+            {data: "GOBPID"}
+            ]
+        });
+
+    var table = $("#structureDataTable").DataTable();
+    $('#structureDataTable tbody').on('click', 'tr', function () {
+       var data = table.row(this).data();
+       var term = data.Term;
+       var id = data.GOBPID
+        debugger;
+       alert("You clicked on " + term + "  " + id);
+       });
+
+} // initalizeStructureDataTable
+//----------------------------------------------------------------------------------------------------
 function initializeUI()
 {
    console.log("--- trenaViz, initializeUI");
@@ -194,6 +261,8 @@ function initializeUI()
    trenaVizDiv = $("#trenaVizDiv");
 
    cyDiv = $("#cyDiv")
+   structureCyjsDiv = $("structureCyjsDiv");
+
    setTimeout(function(){initializeIGV();}, 0);
    self = initializeTrnCytoscape();
    initializeTrnCytoscapeButtons(self);
@@ -201,7 +270,8 @@ function initializeUI()
    //options = {container: $('#structureCyjsDiv'), elements:{nodes:[{data:{id:'a'}}], edges:[{data:{source:'a', target:'a'}}]}}
    //cytoscape(options);
    //setTimeout(function(){cytoscape(options);}, 0);
-   cyjsStructure = initializeStructureCytoscape()
+   cyjsStructure = initializeStructureCytoscape();
+   initializeStructureDataTable();
    initializeStructureCytoscapeButtons(cyjsStructure);
 
    trenaVizDiv.tabs({
@@ -210,6 +280,11 @@ function initializeUI()
           console.log("cy!");
           handleWindowResize();
           cy.resize();
+          }
+        else if(ui.newPanel.is("#structureDiv")){
+          console.log("structureDiv!");
+          handleWindowResize();
+          structureCy.resize();
           }
         else if(ui.newPanel.is("#igvDiv")){
           console.log("igv!");
@@ -307,8 +382,15 @@ function handleWindowResize ()
    trenaVizDiv.width(newWidth);
    var tabTitlesHeight = $(".ui-tabs-nav").height();
    var cyMenubarHeight = $("#cyMenubarDiv").height();
-   cyDiv.height(newHeight - (tabTitlesHeight + cyMenubarHeight + 10));
+   var newCyHeight = newHeight - (tabTitlesHeight + cyMenubarHeight + 60);
+   console.log("newCyHeight: " + newCyHeight);
+   cyDiv.height(newCyHeight);
    cyDiv.width(newWidth); // #  - 45);
+   console.log("--- setting structureCyjsDiv to height " + newCyHeight);
+   $("#structureDiv").height(newHeight)
+   $("#structureOuterDiv").height(newHeight)
+   $("#structureCyjsDiv").height(newCyHeight)
+   $("#structureTableDiv").height(newCyHeight)
 
 } // handleWindowResize
 //--------------------------------------------------------------------------------
@@ -316,9 +398,11 @@ function addMessageHandlers()
 {
    hub.addMessageHandler("addGraph",                  addGraph);
    hub.addMessageHandler("httpAddGraph",              httpAddGraph);
+   hub.addMessageHandler("httpAddStructureGraph",     httpAddStructureGraph);
    hub.addMessageHandler("fit",                       fit);
    hub.addMessageHandler("fitSelected",               fitSelected);
    hub.addMessageHandler("selectNodes",               selectNodes);
+   hub.addMessageHandler("selectStructureNodes",      selectStructureNodes);
    hub.addMessageHandler("getSelectedNodes",          getSelectedNodes);
    hub.addMessageHandler("clearSelection",            clearSelection);
    hub.addMessageHandler("sfn",                       sfn);
@@ -329,6 +413,7 @@ function addMessageHandlers()
    hub.addMessageHandler("showGenomicRegion",         showGenomicRegion);
    hub.addMessageHandler("getGenomicRegion",          getGenomicRegion);
    hub.addMessageHandler("httpSetStyle",              httpSetStyle);
+   hub.addMessageHandler("httpSetStructureStyle",     httpSetStructureStyle);
 
    /****************
    hub.addMessageHandler("setGraph",             setGraph);
@@ -1477,6 +1562,30 @@ function selectNodes(msg)
 
 } // selectedNodes
 //----------------------------------------------------------------------------------------------------
+function selectStructureNodes(msg)
+{
+   console.log("==== selectStructureNodes");
+   console.log(msg.payload);
+   var nodeIDs = msg.payload.nodeIDs;
+
+   if(typeof(nodeIDs) == "string")
+      nodeIDs = [nodeIDs];
+
+   var filterStrings = [];
+
+   for(var i=0; i < nodeIDs.length; i++){
+     var s = '[id="' + nodeIDs[i] + '"]';
+     filterStrings.push(s);
+     } // for i
+
+
+   var nodesToSelect = structureCy.nodes(filterStrings.join());
+   nodesToSelect.select()
+
+   hub.send({cmd: msg.callback, status: "success", callback: "", payload: ""});
+
+} // selectStructureNodes
+//----------------------------------------------------------------------------------------------------
 function sfn(msg)
 {
    cy.nodes(':selected').neighborhood().nodes().select()
@@ -1760,7 +1869,7 @@ function httpAddGraph(msg)
      createModelNamesMenu(modelNames);
      }
 
-  status = readNetworkFromFile(filename);
+  status = readNetworkFromFile(filename, cy);
   //status = "no action right now"
 
   if (status=="success") {
@@ -1774,7 +1883,33 @@ function httpAddGraph(msg)
 
 } // httpAddGraph
 //----------------------------------------------------------------------------------------------------
-readNetworkFromFile = function (filename)
+function httpAddStructureGraph(msg)
+{
+  console.log("=== entering httpAddStructureGraph");
+  var filename = msg.payload.graph;
+  console.log("httpAdding graph '" + filename + "'");
+
+  var modelNames = msg.payload.modelNames;
+  console.log("    modelNames: " + modelNames.length);
+  if(modelNames.length > 1){
+     createModelNamesMenu(modelNames);
+     }
+
+  status = readNetworkFromFile(filename, structureCy);
+  //status = "no action right now"
+
+  if (status=="success") {
+     return_msg = {cmd: msg.callback, status: "success", callback: "", payload: ""};
+     }
+  else{
+    return_msg = {cmd: msg.callback, status: "failure", callback: "", payload: status};
+    }
+
+  hub.send(return_msg);
+
+} // httpAddStructureGraph
+//----------------------------------------------------------------------------------------------------
+readNetworkFromFile = function (filename, targetCy)
 {
    var s = window.location.href + "?" + filename;
    fetch(s)
@@ -1783,7 +1918,7 @@ readNetworkFromFile = function (filename)
           return responseObj.json();
           })
      .then(function(j){
-         cy.json(j);
+         targetCy.json(j);
          return "success";
          });
 
@@ -1820,11 +1955,22 @@ function httpSetStyle(msg)
   console.log("=== entering httpSetStyle");
   var filename = msg.payload;
   console.log("httpSetStyle: '" + filename + "'");
-  loadStyle(filename);
+  loadStyle(filename, cy);
   return_msg = {cmd: msg.callback, status: "success", callback: "", payload: ""};
   hub.send(return_msg);
 
 } // httpSetStyle
+//----------------------------------------------------------------------------------------------------
+function httpSetStructureStyle(msg)
+{
+  console.log("=== entering httpSetStructureStyle");
+  var filename = msg.payload;
+  console.log("httpSetStyle: '" + filename + "'");
+  loadStyle(filename, structureCy);
+  return_msg = {cmd: msg.callback, status: "success", callback: "", payload: ""};
+  hub.send(return_msg);
+
+} // httpSetStructureStyle
 //----------------------------------------------------------------------------------------------------
 function getVizmapNames()
 {
@@ -1983,7 +2129,7 @@ function qtipOptions()
 } // qtipOptions
 //----------------------------------------------------------------------------------------------------
 // expected file contents:  vizmap = [{selector:"node",css: {...
-function loadStyle(filename)
+function loadStyle(filename, cyTarget)
 {
    //var s = "http://localhost:8000/" + filename;
    console.log("trenaViz.loadStyle, filename: " + filename);
@@ -1995,7 +2141,7 @@ function loadStyle(filename)
      .done(function(script, textStatus) {
         console.log(textStatus);
         //console.log("style elements " + layout.length);
-        cy.style(vizmap);
+        cyTarget.style(vizmap);
        })
     .fail(function( jqxhr, settings, exception ) {
        console.log("getScript error trying to read " + filename);
@@ -2070,16 +2216,16 @@ hub.start();
 
   <div id="structureDiv">
      <div id="structureCyOuterDiv">
-     <div id="structureCyMenubarDiv">
+       <div id="structureCyMenubarDiv">
          <button id='structureCyFitButton' class="cyMenuButton">Fit</button>
          <button id='structureCyFitSelectedButton'class="cyMenuButton">Fit Selected</button>
          <button id='structureCySFNButton' class="cyMenuButton">SFN</button>
          <button id='structureCyHideUnselectedButton' class="cyMenuButton">Hide Unselected</button>
          <button id='structureCyShowAllButton' class="cyMenuButton">Show All</button>
-     </div>
-     <div id="structureCyjsDiv"></div>
-     <div id="structureTableDiv">
-       <table id="dataTable" class="display" width="100%">
+       </div>
+       <div id="structureCyjsDiv"></div>
+       <div id="structureTableDiv">
+       <table id="structureDataTable" class="display" width="100%">
          <thead>
            <tr>
              <th>Term</th>
