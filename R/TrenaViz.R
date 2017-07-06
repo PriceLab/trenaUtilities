@@ -17,6 +17,7 @@ setGeneric('loadStructureStyle',        signature='obj', function(obj, filename)
 setGeneric('fit',              signature='obj', function(obj, padding=30) standardGeneric('fit'))
 setGeneric('fitSelected',      signature='obj', function(obj, padding=30) standardGeneric('fitSelectedContent'))
 setGeneric('selectNodes',      signature='obj', function(obj, nodeIDs) standardGeneric('selectNodes'))
+setGeneric('setNodeAttributes',   signature='obj', function(obj, attribute, nodes, values, cyInstance="default") standardGeneric('setNodeAttributes'))
 setGeneric('selectStructureNodes',      signature='obj', function(obj, nodeIDs) standardGeneric('selectStructureNodes'))
 setGeneric('getSelectedNodes', signature='obj', function(obj) standardGeneric('getSelectedNodes'))
 setGeneric('clearSelection',   signature='obj', function(obj) standardGeneric('clearSelection'))
@@ -323,6 +324,30 @@ setMethod('layout', 'TrenaViz',
      })
 
 #----------------------------------------------------------------------------------------------------
+setMethod('setNodeAttributes', 'TrenaViz',
+
+   function(obj, attribute, nodes, values, cyInstance="default"){
+
+     if (length (nodes) == 0)
+       return ()
+
+     if(length(values) == 1)
+        values <- rep(values, length(nodes))
+
+     payload <- list(attribute=attribute, nodes=nodes, values=values, cyInstance=cyInstance)
+     send(obj, list(cmd="setNodeAttributes", callback="handleResponse", status="request",
+                    payload=payload))
+     while (!browserResponseReady(obj)){
+        Sys.sleep(.1)
+        }
+     result <- getBrowserResponse(obj)
+     if(nchar(result) > 0)
+       return(fromJSON(getBrowserResponse(obj)))
+     else
+       invisible("")
+     }) # setNodeAttributes
+
+#------------------------------------------------------------------------------------------------------------------------
 # {elements: [
 #    {data: {id: 'a', score:5}, position: {x: 100, y: 200}},
 #    {data: {id: 'b', score:100}, position: {x: 200, y: 200}},

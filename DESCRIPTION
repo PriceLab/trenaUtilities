@@ -1,8 +1,8 @@
 Package: TrenaHelpers
 Type: Package
 Title: visualization and run-time support fro trena
-Version: 0.99.02
-Date: 2017-06-22
+Version: 0.99.03
+Date: 2017-07-05
 Author: Paul Shannon <pshannon@systemsbioloyg.org>
 Maintainer: Paul Shannon <pshannon@systemsbioloyg.org>
 Imports:

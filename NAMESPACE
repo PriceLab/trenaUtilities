@@ -23,6 +23,7 @@ export(
     fit,
     fitSelected,
     selectNodes,
+    setNodeAttributes,
     selectStructureNodes,
     getSelectedNodes,
     clearSelection,
