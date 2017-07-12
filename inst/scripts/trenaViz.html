@@ -2134,7 +2134,7 @@ function createCytoscapeWindow(graph, hideEdges) {
         setupDefaultStyles(localCy);
         localCy.layout({name: "random"});
         localCy.reset();
-        localCy.fit(50);
+        setTimeout(function(){localCy.fit(50);}, 250)
         localCy.edges().selectify();
         //localCy.elements().qtip(qtipOptions());
         } // localCy.ready
