@@ -5,6 +5,17 @@ chain.38to19 <- import.chain(system.file(package="trenaUtilities", "data", "hg38
 liftoverBedTable.hg19.hg38 <- function(tbl)
 {
      # some minimal sanity checks:  chrX or chromX or  X values in 1st column
+   incoming.column.count <- ncol(tbl)
+   incoming.column.names <- colnames(tbl)
+
+   stopifnot(incoming.column.count >= 3)
+
+   tbl.otherColumns <- data.frame()
+   if(incoming.column.count > 3){
+      tbl.otherColumns <- tbl[, 4:incoming.column.count]
+      tbl <- tbl[, 1:3]
+      colnames(tbl) <- c("chrom", "start", "end")
+      }
 
    chromValues <- sort(unique(sub("^chr", "", tbl[,1])))
    chromValues <- sub("^chrom", "", chromValues)
@@ -19,12 +30,9 @@ liftoverBedTable.hg19.hg38 <- function(tbl)
    stopifnot(all(is.numeric(tbl[,2])))
    stopifnot(all(is.numeric(tbl[,3])))
 
-   if(ncol(tbl) == 3)
-       colnames(tbl) <- c("chrom", "start", "end")
 
-   if(ncol(tbl) == 4){
-      colnames(tbl) <- c("chrom", "start", "end", "name")
-      }
+   if(incoming.column.count == 3)
+       colnames(tbl) <- c("chrom", "start", "end")
 
    gr <- GRanges(Rle(tbl$chrom), IRanges(tbl$start, tbl$end))
    seqlevelsStyle(gr) <- "UCSC"
@@ -32,8 +40,10 @@ liftoverBedTable.hg19.hg38 <- function(tbl)
    gr.38 <- unlist(liftOver(gr, chain.19to38))
    seqinfo(gr.38) <- SeqinfoForUCSCGenome("hg38")[seqlevels(gr)]
    tbl.out <- data.frame(chrom=as.character(seqnames(gr.38)), start=start(gr.38), end=end(gr.38), stringsAsFactors=FALSE)
-   if("name" %in% colnames(tbl))
-      tbl.out <- cbind(tbl.out, name=tbl$name)
+   if(ncol(tbl.otherColumns) > 0)
+      tbl.out <- cbind(tbl.out, tbl.otherColumns)
+
+   colnames(tbl.out) <- incoming.column.names
 
    tbl.out
 

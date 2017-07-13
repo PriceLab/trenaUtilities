@@ -1,8 +1,8 @@
-Package: TrenaHelpers
+Package: trenaUtilities
 Type: Package
-Title: visualization and run-time support fro trena
-Version: 0.99.03
-Date: 2017-07-05
+Title: visualization and run-time support for trena
+Version: 0.99.04
+Date: 2017-07-13
 Author: Paul Shannon <pshannon@systemsbioloyg.org>
 Maintainer: Paul Shannon <pshannon@systemsbioloyg.org>
 Imports:
@@ -28,7 +28,5 @@ License: MIT
 biocViews: Transcription, GeneRegulation, NetworkInference, FeatureExtraction, Regression,
     SystemsBiology, GeneExpression
 Collate:
-    'Recipe.R'
-    'Cook.R'
-    'TrenaPrep.R'
-    'TrenaViz.R'
+    TrenaViz.R
+    liftoverHg19BedFiles.R

@@ -7,6 +7,7 @@ runTests <- function()
 {
    printf("--- runTests")
    test_liftoverBedTable.19.38()
+   test_liftoverNarrowPeakBedTable.19.38()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -42,4 +43,29 @@ test_liftoverBedTable.19.38 <- function()
    checkTrue(all(hg.19.lengths == hg.38.lengths))
 
 } # test_liftoverBedTable.19.38
+#------------------------------------------------------------------------------------------------------------------------
+test_liftoverNarrowPeakBedTable.19.38 <- function()
+{
+   printf("--- test_liftoverNarrowPeakBedTable.19.38")
+
+   tbl.narrowPeak.19 <- data.frame(chrom=rep("chr1", 4),
+                                  chromStart=c(99862695, 99872315, 99907355, 99923255),
+                                    chromEnd=c(99862845, 99872465, 99907505, 99923405),
+                                        name=rep(".", 4),
+                                       score=rep(0, 4),
+                                      strand=rep(".", 4),
+                                 signalValue=c(67, 43, 21, 38),
+                                      pValue=rep(-1, 4),
+                                      qValue=rep(-1, 4),
+                                        peak=rep(75, 4))
+
+   tbl.narrowPeak.38 <- liftoverBedTable.hg19.hg38(tbl.narrowPeak.19)
+   checkEquals(colnames(tbl.narrowPeak.19), colnames(tbl.narrowPeak.38))
+   widths.19 <- 1 + tbl.narrowPeak.19$chromEnd - tbl.narrowPeak.19$chromStart;
+   widths.38 <- 1 + tbl.narrowPeak.38$chromEnd - tbl.narrowPeak.38$chromStart;
+   checkTrue(all(widths.19 == widths.38))
+   checkTrue(all(tbl.narrowPeak.19$chromStart != tbl.narrowPeak.38$chromStart))
+   checkTrue(all(tbl.narrowPeak.19$chromEnd != tbl.narrowPeak.38$chromEnd))
+
+} # test_liftoverNarrowPeakBedTable.19.38
 #------------------------------------------------------------------------------------------------------------------------
