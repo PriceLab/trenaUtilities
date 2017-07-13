@@ -1,5 +1,5 @@
 library(TReNA)
-library(TrenaHelpers)
+library(trenaUtilities)
 library(RUnit)
 #------------------------------------------------------------------------------------------------------------------------
 runTests <- function(display=FALSE)
@@ -22,8 +22,9 @@ test_httpAddGraph_tiny <- function()
    node.name <- "x"
    g <- graphNEL(nodes=node.name, edgemode="directed")
    g <- graph::addEdge(node.name, node.name, g)
-   tViz <- TrenaViz()
+   tViz <- trenaViz()
    httpAddGraph(tViz, g);
+   fit(tViz, 100)
    selectNodes(tViz, node.name)
    checkEquals(getSelectedNodes(tViz), node.name)
 

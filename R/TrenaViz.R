@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------------------------------
-cyjsBrowserFile <- system.file(package="TrenaHelpers", "scripts", "trenaViz.html")
+cyjsBrowserFile <- system.file(package="trenaUtilities", "scripts", "trenaViz.html")
 printf <- function(...) print(noquote(sprintf(...)))
 #----------------------------------------------------------------------------------------------------
 .TrenaViz <- setClass ("TrenaViz",
@@ -14,6 +14,7 @@ setGeneric('httpAddGraph',     signature='obj', function(obj, graph, modelNames=
 setGeneric('httpAddStructureGraph',     signature='obj', function(obj, graph, modelNames=list()) standardGeneric ('httpAddStructureGraph'))
 setGeneric('loadStyle',        signature='obj', function(obj, filename) standardGeneric ('loadStyle'))
 setGeneric('loadStructureStyle',        signature='obj', function(obj, filename) standardGeneric ('loadStructureStyle'))
+setGeneric('raiseTab',         signature='obj', function(obj, tabName) standardGeneric('raiseTab'))
 setGeneric('fit',              signature='obj', function(obj, padding=30) standardGeneric('fit'))
 setGeneric('fitSelected',      signature='obj', function(obj, padding=30) standardGeneric('fitSelectedContent'))
 setGeneric('selectNodes',      signature='obj', function(obj, nodeIDs) standardGeneric('selectNodes'))
@@ -37,7 +38,7 @@ setGeneric('geneRegulatoryModelToGraph',    signature='obj', function(obj, targe
 #setGeneric('addGeneModelLayout', signature='obj', function(obj, g, xPos.span) standardGeneric('addGeneModelLayout'))
 #----------------------------------------------------------------------------------------------------
 # constructor
-TrenaViz = function(portRange=11000:11025, host="localhost", title="TReNA-Viz", quiet=TRUE)
+trenaViz = function(portRange=11000:11025, host="localhost", title="TReNA-Viz", quiet=TRUE)
 {
 
    model <- data.frame()
@@ -56,7 +57,7 @@ TrenaViz = function(portRange=11000:11025, host="localhost", title="TReNA-Viz", 
 
    obj
 
-} # TrenaViz constructor
+} # trenaViz constructor
 #----------------------------------------------------------------------------------------------------
 setMethod('addGraph', 'TrenaViz',
 
@@ -150,6 +151,17 @@ setMethod('loadStructureStyle', 'TrenaViz',
         Sys.sleep(.1)
         }
      printf("browserResponseReady")
+     getBrowserResponse(obj);
+     })
+
+#----------------------------------------------------------------------------------------------------
+setMethod('raiseTab', 'TrenaViz',
+
+  function (obj, tabName) {
+     send(obj, list(cmd="raiseTab", callback="handleResponse", status="request", payload=tabName))
+     while (!browserResponseReady(obj)){
+        Sys.sleep(.1)
+        }
      getBrowserResponse(obj);
      })
 

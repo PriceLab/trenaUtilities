@@ -437,6 +437,7 @@ function handleWindowResize ()
 //--------------------------------------------------------------------------------
 function addMessageHandlers()
 {
+   hub.addMessageHandler("raiseTab",                  raiseTab);
    hub.addMessageHandler("addGraph",                  addGraph);
    hub.addMessageHandler("httpAddGraph",              httpAddGraph);
    hub.addMessageHandler("httpAddStructureGraph",     httpAddStructureGraph);
@@ -1895,6 +1896,37 @@ function createModelNamesMenu(modelNames)
 
 } // createModelNamesMenu
 //----------------------------------------------------------------------------------------------------
+function raiseTab(msg)
+{
+  var displayedTabName = msg.payload;
+
+  status = "success"  // be optimistic
+  returnPayload = "";
+
+  switch(displayedTabName) {
+    case "IGV":
+       $("[href='#igvDiv']").trigger("click")
+       break;
+    case "TRN":
+       $("[href='#cyOuterDiv']").trigger("click")
+       break;
+    case "Structure":
+       $("[href='#structureDiv']").trigger("click")
+       break;
+    case "Tabular Data":
+       $("[href='#modelDiv']").trigger("click")
+       break;
+    default:
+       status = "error";
+       returnPayload = "unrecognized tab name: " + displayedTabName;
+    } // switch on displayedTabName
+
+  var return_msg = {cmd: msg.callback, status: status, callback: "", payload: returnPayload};
+
+  hub.send(return_msg);
+
+} // raiseTab
+//----------------------------------------------------------------------------------------------------
 function addGraph(msg)
 {
   console.log("=== entering addGraph");
@@ -2134,7 +2166,7 @@ function createCytoscapeWindow(graph, hideEdges) {
         setupDefaultStyles(localCy);
         localCy.layout({name: "random"});
         localCy.reset();
-        setTimeout(function(){localCy.fit(50);}, 250)
+        setTimeout(function(){localCy.fit(50); console.log("calling fit")}, 250)
         localCy.edges().selectify();
         //localCy.elements().qtip(qtipOptions());
         } // localCy.ready
@@ -2231,7 +2263,7 @@ return{
    setEdgeRenderingMethod: setEdgeRenderingMethod,
    loadStyle: loadStyle,
    nextCyModel: nextCyModel,
-   chromLocString: "chr1:1-1"
+   chromLocString: "chr1:1-1",
    };
 
 //----------------------------------------------------------------------------------------------------
