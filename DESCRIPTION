@@ -1,8 +1,8 @@
 Package: trenaUtilities
 Type: Package
 Title: visualization and run-time support for trena
-Version: 0.99.04
-Date: 2017-07-13
+Version: 0.99.05
+Date: 2017-07-14
 Author: Paul Shannon <pshannon@systemsbioloyg.org>
 Maintainer: Paul Shannon <pshannon@systemsbioloyg.org>
 Imports:
