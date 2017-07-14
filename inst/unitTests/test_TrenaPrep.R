@@ -1,4 +1,4 @@
-library(TrenaHelpers)
+library(trenaUtilities)
 library(RPostgreSQL)   # TODO: part of the nasty hack.  remove
 library(RUnit)
 library(SNPlocs.Hsapiens.dbSNP144.GRCh38)   # load here so that it is ready when needed
@@ -84,7 +84,7 @@ test_.callFootprintFilterAndTFexpander <- function()
 
    prep <- TrenaPrep("AQP4", aqp4.tss, chromosome, chromStart, chromEnd, regulatoryRegionSources=list(source))
 
-   tbl.fp <- TrenaHelpers:::.callFootprintFilter(prep, source, chromosome, chromStart, chromEnd,
+   tbl.fp <- trenaUtilities:::.callFootprintFilter(prep, source, chromosome, chromStart, chromEnd,
                                                  targetGene, targetGeneTSS=aqp4.tss)
    checkTrue(all(colnames(tbl.fp) == getRegulatoryTableColumnNames(prep)))
    checkTrue(nrow(tbl.fp) > 8 & nrow(tbl.fp) <20)
@@ -109,7 +109,7 @@ test_.callHumanDHSFilterAndTFexpander <- function()
 
    prep <- TrenaPrep("AQP4", aqp4.tss, chromosome, chromStart, chromEnd, regulatoryRegionSources=list(source))
 
-   tbl.fp <- TrenaHelpers:::.callHumanDHSFilter(prep, source, chromosome, chromStart, chromEnd,
+   tbl.fp <- trenaUtilities:::.callHumanDHSFilter(prep, source, chromosome, chromStart, chromEnd,
                                                 targetGene, targetGeneTSS=aqp4.tss)
 
    checkTrue(all(colnames(tbl.fp) == getRegulatoryTableColumnNames(prep)))
@@ -310,7 +310,7 @@ test_buildMultiModelGraph_oneModel <- function(display=FALSE)
    if(display){
      tViz <<- TrenaViz()
      httpAddGraph(tViz, g.lo, names(models))
-     loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
+     loadStyle(tViz, system.file(package="trenaUtilities", "extdata", "style.js"))
      Sys.sleep(3); fit(tViz)
      browser()
      }
@@ -375,7 +375,7 @@ test_buildMultiModelGraph_fiveModels <- function(display=FALSE)
    if(display){
      tViz <<- TrenaViz()
      httpAddGraph(tViz, g.lo, names(models))
-     loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
+     loadStyle(tViz, system.file(package="trenaUtilities", "extdata", "style.js"))
      Sys.sleep(3); fit(tViz)
      browser()
      }
@@ -429,7 +429,7 @@ test_buildMultiModelGraph_twoModels_15k_span <- function(display=FALSE)
    if(display){
      tViz <<- TrenaViz()
      httpAddGraph(tViz, g.lo, names(models))
-     loadStyle(tViz, system.file(package="TrenaHelpers", "extdata", "style.js"))
+     loadStyle(tViz, system.file(package="trenaUtilities", "extdata", "style.js"))
      Sys.sleep(3); fit(tViz)
      browser()
      }

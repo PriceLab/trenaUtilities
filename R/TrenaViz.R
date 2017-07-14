@@ -9,6 +9,7 @@ printf <- function(...) print(noquote(sprintf(...)))
                         )
 
 #----------------------------------------------------------------------------------------------------
+setGeneric('setGenome',        signature='obj', function(obj, genomeName) standardGeneric ('setGenome'))
 setGeneric('addGraph',         signature='obj', function(obj, graph, modelNames=list()) standardGeneric ('addGraph'))
 setGeneric('httpAddGraph',     signature='obj', function(obj, graph, modelNames=list()) standardGeneric ('httpAddGraph'))
 setGeneric('httpAddStructureGraph',     signature='obj', function(obj, graph, modelNames=list()) standardGeneric ('httpAddStructureGraph'))
@@ -58,6 +59,20 @@ trenaViz = function(portRange=11000:11025, host="localhost", title="TReNA-Viz", 
    obj
 
 } # trenaViz constructor
+#----------------------------------------------------------------------------------------------------
+setMethod('setGenome', 'TrenaViz',
+
+  function (obj, genomeName) {
+     printf("TrenaViz::addGenome");
+     payload <- genomeName
+     send(obj, list(cmd="setGenome", callback="handleResponse", status="request", payload=payload))
+     while (!browserResponseReady(obj)){
+        Sys.sleep(.1)
+        }
+     printf("browserResponseReady")
+     getBrowserResponse(obj);
+     })
+
 #----------------------------------------------------------------------------------------------------
 setMethod('addGraph', 'TrenaViz',
 

@@ -28,5 +28,6 @@ License: MIT
 biocViews: Transcription, GeneRegulation, NetworkInference, FeatureExtraction, Regression,
     SystemsBiology, GeneExpression
 Collate:
+    TrenaPrep.R
     TrenaViz.R
     liftoverHg19BedFiles.R

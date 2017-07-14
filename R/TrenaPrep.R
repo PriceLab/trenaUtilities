@@ -8,7 +8,7 @@
                            targetGeneTSS="numeric")
                         )
 #------------------------------------------------------------------------------------------------------------------------
-setGeneric('getRegulatoryRegions',  signature='obj', function(obj, combine=FALSE) standardGeneric ('getRegulatoryRegions'))
+setGeneric('getRegulatoryRegions',  signature='obj', function(obj, combine=FALSE, quiet=FALSE) standardGeneric ('getRegulatoryRegions'))
 setGeneric('getRegulatoryTableColumnNames',  signature='obj', function(obj) standardGeneric ('getRegulatoryTableColumnNames'))
 setGeneric('getGeneModelTableColumnNames',  signature='obj', function(obj) standardGeneric ('getGeneModelTableColumnNames'))
 setGeneric('expandRegulatoryRegionsTableByTF', signature='obj', function(obj, tbl.reg) standardGeneric('expandRegulatoryRegionsTableByTF'))
@@ -98,7 +98,7 @@ setMethod('getGeneModelTableColumnNames', 'TrenaPrep',
 #------------------------------------------------------------------------------------------------------------------------
 setMethod('getRegulatoryRegions', 'TrenaPrep',
 
-      function(obj, combine=FALSE){
+      function(obj, combine=FALSE, quiet=FALSE){
          tbl.combined <- data.frame()
          result <- list()
 
@@ -107,6 +107,7 @@ setMethod('getRegulatoryRegions', 'TrenaPrep',
 
          if(length(encodeDHS.source.index)){
             sources <- sources[-encodeDHS.source.index]
+            if(!quiet) printf("about to callHumanDHSFilter");
             tbl.dhs <- .callHumanDHSFilter(obj, source, obj@chromosome, obj@chromStart, obj@chromEnd,
                                            obj@targetGene, obj@targetGeneTSS)
             result[["encodeHumanDHS"]] <- tbl.dhs
@@ -115,6 +116,7 @@ setMethod('getRegulatoryRegions', 'TrenaPrep',
             } # if encode DSH source requested
 
          for(source in sources){  # don't use the object slot.  use locally scoped, possibly modified variable
+            if(!quiet) printf("about to call footprintFilter with source = '%s'", source);
             tbl.fp <- .callFootprintFilter(obj, source, obj@chromosome, obj@chromStart, obj@chromEnd,
                                            obj@targetGene, obj@targetGeneTSS)
             if(combine)

@@ -304,7 +304,7 @@ function initializeUI()
    cyDiv = $("#cyDiv")
    structureCyjsDiv = $("structureCyjsDiv");
 
-   setTimeout(function(){initializeIGV();}, 0);
+   //setTimeout(function(){initializeIGV();}, 0);
    self = initializeTrnCytoscape();
    initializeTrnCytoscapeButtons(self);
 
@@ -364,39 +364,74 @@ function nextCyModel(modelName)
 
 } // nextCyModel
 //----------------------------------------------------------------------------------------------------
-function initializeIGV()
+function initializeIGV(genomeName)
 {
    console.log("--- trenaViz, initializeIGV");
 
-   var igvOptions = {locus: "chr18:26,827,369-26,890,488", // AQP4
+   var hg38_options = {locus: "chr18:26,827,369-26,890,488", // AQP4
        reference: {id: "hg38",
                    fastaURL: "http://igv.broadinstitute.org/genomes/seq/1kg_v37/human_g1k_v37_decoy.fasta",
                    cytobandURL: "http://igv.broadinstitute.org/genomes/seq/b37/b37_cytoband.txt"
                    },
-     //reference: {id: "geneSymbols_hg38",
-     //    fastaURL: "http://pshannon.systemsbiology.net/genomes/hg38.fa",
-     //    cytobandURL: "http://pshannon.systemsbiology.net/genomes/cytoband.hg38.txt",
-     //    },
      tracks: [
         {name: 'Gencode v24',
          url: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz",
          indexURL: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz.tbi",
-         //url: "//s3.amazonaws.com/igv.broadinstitute.org/annotations/hg38/genes/gencode.v24.annotation.sorted.gtf.gz",
-         //indexURL: "//s3.amazonaws.com/igv.broadinstitute.org/annotations/hg38/genes/gencode.v24.annotation.sorted.gtf.gz.tbi",
          format: 'gtf',
          visibilityWindow: 2000000,
          displayMode: 'EXPANDED'
          },
-        //{name: 'geneSymbols_hg38',
-        // url: 'http://pshannon.systemsbiology.net/hg38/geneSymbolSearch.bed',
-        // indexed: false,
-        // searchable: true,
-        // visibilityWindow: 5000000,
-        // displayMode: 'COLLAPSED',
-        // color: "#448844"
-        // }
         ]
-     }; // igvOptions
+     }; // hg38_options
+
+
+   var mm10_options = {locus: "5:88,621,548-88,999,827", //"22:40,000,000-40,200,000",
+         minimumBases: 5,
+         showRuler: true,
+         reference: {id: "mm10",
+                     fastaURL: "http://pshannon.systemsbiology.net/mm10/GRCm38.primary_assembly.genome.fa",
+                     cytobandURL: "http://pshannon.systemsbiology.net/mm10/cytoBand.txt"
+                     },
+         tracks: [
+            {name: 'Gencode vM14',
+             url: "http://pshannon.systemsbiology.net/mm10/gencode.vM14.basic.annotation.sorted.gtf.gz",
+             indexURL: "http://pshannon.systemsbiology.net/mm10/gencode.vM14.basic.annotation.sorted.gtf.gz.tbi",
+             format: 'gtf',
+             visibilityWindow: 2000000,
+             displayMode: 'EXPANDED'
+             },
+            ]
+       }; // mm10_options
+
+
+   /***********
+   var igvOptions_mm10 = {locus: "chr18:26,827,369-26,890,488", // AQP4
+       reference: {id: "mm10",
+                   fastaURL: "http://igv.broadinstitute.org/genomes/seq/1kg_v37/human_g1k_v37_decoy.fasta",
+                   cytobandURL: "http://igv.broadinstitute.org/genomes/seq/b37/b37_cytoband.txt"
+                   },
+     tracks: [
+        {name: 'Gencode v24',
+         url: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz",
+         indexURL: "http://pshannon.systemsbiology.net/hg38/gencode.v24.annotation.sorted.gtf.gz.tbi",
+         format: 'gtf',
+         visibilityWindow: 2000000,
+         displayMode: 'EXPANDED'
+         },
+        ]
+     }; // igvOptions_hg38
+   ***********/
+
+   switch(genomeName) {
+      case "hg38":
+         igvOptions = hg38_options;
+         break;
+       case "mm10":
+         igvOptions = mm10_options;
+         break;
+         } // switch on genoneName
+
+    $("#igvDiv").children().remove()
 
    console.log("--- trenaViz, igv:");
    console.log(igv)
@@ -437,6 +472,7 @@ function handleWindowResize ()
 //--------------------------------------------------------------------------------
 function addMessageHandlers()
 {
+   hub.addMessageHandler("setGenome",                 setGenome);
    hub.addMessageHandler("raiseTab",                  raiseTab);
    hub.addMessageHandler("addGraph",                  addGraph);
    hub.addMessageHandler("httpAddGraph",              httpAddGraph);
@@ -1895,6 +1931,24 @@ function createModelNamesMenu(modelNames)
    nextCyModel(modelNames[0]);
 
 } // createModelNamesMenu
+//----------------------------------------------------------------------------------------------------
+function setGenome(msg)
+{
+  var supportedGenomes = ["hg38", "mm10"];
+  var genomeName = msg.payload;
+  var returnPayload = "";
+
+  if(supportedGenomes.indexOf(genomeName) < 0){
+     status = "failure"
+     returnPayload = "error, unsupported genome: '" + genomeName + "'";
+     var return_msg = {cmd: msg.callback, status: status, callback: "", payload: returnPayload};
+     hub.send(return_msg);
+     } // if unsupported genome
+
+   setTimeout(function(){initializeIGV(genomeName);}, 0);
+   hub.send({cmd: msg.callback, status: "success", callback: "", payload: ""});
+
+} // setGenome
 //----------------------------------------------------------------------------------------------------
 function raiseTab(msg)
 {

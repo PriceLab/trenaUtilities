@@ -1,10 +1,13 @@
 exportClasses(
-   TrenaViz)
+   TrenaViz,
+   TrenaPrep
+   )
 
 export(
     liftoverBedTable.hg19.hg38,
     liftoverBedFile.hg19.hg38,
     trenaViz,
+    TrenaPrep,
     geneRegulatoryModelToGraph,
     addGraph,
     httpAddGraph,
@@ -12,6 +15,7 @@ export(
     loadStyle,
     loadStructureStyle,
     raiseTab,
+    setGenome,
     addBedTrackFromDataFrame,
     addBedTrackFromHostedFile,
     showGenomicRegion,
@@ -25,15 +29,20 @@ export(
     clearSelection,
     sfn,
     layoutStrategies,
-    layout
+    layout,
+    getRegulatoryRegions,
+    getRegulatoryTableColumnNames,
+    getGeneModelTableColumnNames,
+    expandRegulatoryRegionsTableByTF,
+    createGeneModel,
+    buildMultiModelGraph,
+    addGeneModelLayout,
+    assessSnp
     )
 
-exportMethods(
+exportMethods()
 
-)
-
-import(
-)
+import()
 
 import(GenomicRanges)
 import(rtracklayer)
