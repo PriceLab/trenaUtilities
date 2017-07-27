@@ -17,18 +17,23 @@ setGeneric('loadStyle',        signature='obj', function(obj, filename) standard
 setGeneric('loadStructureStyle',        signature='obj', function(obj, filename) standardGeneric ('loadStructureStyle'))
 setGeneric('raiseTab',         signature='obj', function(obj, tabName) standardGeneric('raiseTab'))
 setGeneric('fit',              signature='obj', function(obj, padding=30) standardGeneric('fit'))
-setGeneric('fitSelected',      signature='obj', function(obj, padding=30) standardGeneric('fitSelectedContent'))
+setGeneric('fitSelected',      signature='obj', function(obj, padding=30) standardGeneric('fitSelected'))
 setGeneric('selectNodes',      signature='obj', function(obj, nodeIDs) standardGeneric('selectNodes'))
 setGeneric('setNodeAttributes',   signature='obj', function(obj, attribute, nodes, values, cyInstance="default") standardGeneric('setNodeAttributes'))
 setGeneric('selectStructureNodes',      signature='obj', function(obj, nodeIDs) standardGeneric('selectStructureNodes'))
 setGeneric('getSelectedNodes', signature='obj', function(obj) standardGeneric('getSelectedNodes'))
 setGeneric('clearSelection',   signature='obj', function(obj) standardGeneric('clearSelection'))
 setGeneric('sfn',              signature='obj', function(obj) standardGeneric('sfn'))
-setGeneric('addBedTrackFromDataFrame',   signature='obj', function(obj, trackName, tbl.bed, displayMode="COLLAPSED", color)
+setGeneric('addBedTrackFromDataFrame',   signature='obj', function(obj, trackName, tbl.bed, displayMode="COLLAPSED", color="lightgray")
                                   standardGeneric('addBedTrackFromDataFrame'))
 setGeneric('addBedTrackFromHostedFile',   signature='obj',
-                        function(obj, trackName, uri, index.uri=NA, displayMode="COLLAPSED", color)
+                        function(obj, trackName, uri, index.uri=NA, displayMode="COLLAPSED", color="lightgray")
                                   standardGeneric('addBedTrackFromHostedFile'))
+setGeneric('addBedGraphTrackFromDataFrame',   signature='obj', function(obj, trackName, tbl.bed,
+                                                                        displayMode="COLLAPSED",
+                                                                        minValue=NA, maxValue=NA,
+                                                                        color)
+                                  standardGeneric('addBedGraphTrackFromDataFrame'))
 setGeneric('showGenomicRegion',   signature='obj', function(obj, regionString) standardGeneric('showGenomicRegion'))
 setGeneric('getGenomicRegion',    signature='obj', function(obj, regionString) standardGeneric('getGenomicRegion'))
 setGeneric('layout',              signature='obj', function(obj, strategy) standardGeneric('layout'))
@@ -189,6 +194,42 @@ setMethod('addBedTrackFromDataFrame', 'TrenaViz',
      write.table(tbl.bed, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE, file=temp.filename)
      payload <- list(name=trackName, bedFileName=temp.filename, displayMode=displayMode, color=color)
      send(obj, list(cmd="addBedTrackFromDataFrame", callback="handleResponse", status="request", payload=payload))
+     while (!browserResponseReady(obj)){
+        Sys.sleep(.1)
+        }
+     printf("browserResponseReady")
+     getBrowserResponse(obj);
+     })
+
+#----------------------------------------------------------------------------------------------------
+setMethod('addBedGraphTrackFromDataFrame', 'TrenaViz',
+
+  function (obj, trackName, tbl.bed, displayMode="COLLAPSED", minValue=NA, maxValue=NA, color="lightgray") {
+     printf("TrenaViz::addBedGraphTrackFromDataFrame, color: %s", color);
+     required.colnames <- c("chr", "start", "end", "score")
+     missing.colnames <- setdiff(required.colnames, colnames(tbl.bed))
+     if(length(missing.colnames) > 0){
+        printf("addBedGraphTrackFromDataFrame detects missing column name: %s",
+               paste(missing.colnames, collapse=", "))
+        return()
+        }
+
+     if(is.na(minValue))
+        minValue <- min(tbl.bed$score)
+
+     if(is.na(maxValue))
+        maxValue <- max(tbl.bed$score)
+
+     temp.filename <- "tmp.bedGraph"
+     write.table(tbl.bed, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE, file=temp.filename)
+     payload <- list(name=trackName,
+                     bedFileName=temp.filename,
+                     displayMode=displayMode,
+                     color=color,
+                     min=minValue,
+                     max=maxValue)
+
+     send(obj, list(cmd="addBedGraphTrackFromDataFrame", callback="handleResponse", status="request", payload=payload))
      while (!browserResponseReady(obj)){
         Sys.sleep(.1)
         }

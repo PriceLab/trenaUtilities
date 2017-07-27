@@ -15,8 +15,8 @@
   <script src='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css"/>
 
-  <script src="http://igv.org/web/release/1.0.7/igv-1.0.7.js"></script>
-  <link rel="stylesheet" type="text/css" href="http://igv.org/web/release/1.0.7/igv-1.0.7.css">
+  <script src="http://igv.org/web/release/1.0.9/igv-1.0.9.js"></script>
+  <link rel="stylesheet" type="text/css" href="http://igv.org/web/release/1.0.9/igv-1.0.9.css">
 
 <style>
 
@@ -486,8 +486,12 @@ function addMessageHandlers()
    hub.addMessageHandler("sfn",                       sfn);
    hub.addMessageHandler("layoutStrategies",          layoutStrategies);
    hub.addMessageHandler("doLayout",                  doLayout);
+
    hub.addMessageHandler("addBedTrackFromDataFrame",  addBedTrackFromDataFrame);
    hub.addMessageHandler("addBedTrackFromHostedFile", addBedTrackFromHostedFile);
+
+   hub.addMessageHandler("addBedGraphTrackFromDataFrame",  addBedGraphTrackFromDataFrame);
+
    hub.addMessageHandler("showGenomicRegion",         showGenomicRegion);
    hub.addMessageHandler("getGenomicRegion",          getGenomicRegion);
    hub.addMessageHandler("httpSetStyle",              httpSetStyle);
@@ -1137,6 +1141,36 @@ function addBedTrackFromDataFrame(msg)
    hub.send({cmd: msg.callback, status: "success", callback: "", payload: ""});
 
 } // addBedTrackFromDataFrame
+//----------------------------------------------------------------------------------------------------
+function addBedGraphTrackFromDataFrame(msg)
+{
+   console.log("--- addBedGraphTrackFromDataFrame");
+   console.log(msg.payload)
+
+   var trackName = msg.payload.name;
+   var bedFileName = msg.payload.bedFileName;
+   var displayMode = msg.payload.displayMode;
+   var color = msg.payload.color;
+   var minValue = msg.payload.min
+   var maxValue = msg.payload.max
+
+   var url = window.location.href + "?" + bedFileName;
+
+   config = {format: "bedgraph",
+             name: trackName,
+             url: url,
+             min: minValue,
+             max: maxValue,
+             indexed:false,
+             displayMode: displayMode,
+             sourceType: "file",
+             color: color,
+             type: "wig"};
+
+   window.igvBrowser.loadTrack(config);
+   hub.send({cmd: msg.callback, status: "success", callback: "", payload: ""});
+
+} // addBedGraphTrackFromDataFrame
 //----------------------------------------------------------------------------------------------------
 function addBedTrackFromHostedFile(msg)
 {

@@ -18,6 +18,7 @@ export(
     setGenome,
     addBedTrackFromDataFrame,
     addBedTrackFromHostedFile,
+    addBedGraphTrackFromDataFrame,
     showGenomicRegion,
     getGenomicRegion,
     fit,

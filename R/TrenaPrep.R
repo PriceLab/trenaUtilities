@@ -16,7 +16,7 @@ setGeneric('createGeneModel', signature='obj', function(obj,  solvers, tbl.regul
               standardGeneric('createGeneModel'))
 setGeneric('buildMultiModelGraph', signature='obj', function(obj, models) standardGeneric('buildMultiModelGraph'))
 setGeneric('addGeneModelLayout', signature='obj', function(obj, g, xPos.span=1500) standardGeneric('addGeneModelLayout'))
-setGeneric('assessSnp', signature='obj', function(obj, variant, shoulder, pwmMatchMinimumAsPercentage, genomeName="hg38")
+setGeneric('assessSnp', signature='obj', function(obj, pfms, variant, shoulder, pwmMatchMinimumAsPercentage, genomeName="hg38")
               standardGeneric('assessSnp'))
 #------------------------------------------------------------------------------------------------------------------------
 # a temporary hack: some constants
@@ -138,7 +138,7 @@ setMethod('expandRegulatoryRegionsTableByTF', 'TrenaPrep',
         counts <- unlist(lapply(tfs.split, length))
         tfs.split.vec <- unlist(tfs.split)
         tbl.expanded <- expandRows(tbl.trimmed, counts, count.is.col=FALSE, drop=FALSE)
-        checkEquals(length(tfs.split.vec), nrow(tbl.expanded))
+        stopifnot(length(tfs.split.vec) == nrow(tbl.expanded))
         tbl.expanded$tf <- tfs.split.vec
         tbl.expanded
         }) # expandRegulatoryRegionsTableByTF
@@ -329,10 +329,10 @@ setMethod('addGeneModelLayout', 'TrenaPrep',
 #------------------------------------------------------------------------------------------------------------------------
 setMethod('assessSnp', 'TrenaPrep',
 
-     function(obj, variant, shoulder, pwmMatchMinimumAsPercentage, genomeName="hg38"){
+     function(obj, pfms=list(), variant, shoulder, pwmMatchMinimumAsPercentage, genomeName="hg38"){
 
-        motifMatcher <- MotifMatcher(name=variant, genomeName=genomeName, quiet=TRUE)
-        tbl.variant <- TReNA:::.parseVariantString(motifMatcher, variant)
+        motifMatcher <- MotifMatcher(name=variant, genomeName=genomeName, pfms=pfms, quiet=TRUE)
+        tbl.variant <- trena:::.parseVariantString(motifMatcher, variant)
         tbl.regions <- data.frame(chrom=tbl.variant$chrom,
                                   start=tbl.variant$loc-shoulder,
                                   end=tbl.variant$loc+shoulder,

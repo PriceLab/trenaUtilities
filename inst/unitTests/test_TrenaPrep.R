@@ -2,6 +2,7 @@ library(trenaUtilities)
 library(RPostgreSQL)   # TODO: part of the nasty hack.  remove
 library(RUnit)
 library(SNPlocs.Hsapiens.dbSNP144.GRCh38)   # load here so that it is ready when needed
+library(MotifDb)
 #------------------------------------------------------------------------------------------------------------------------
 if(!exists("mtx")){
    load("~/github/projects/examples/microservices/trenaGeneModel/datasets/coryAD/rosmap_counts_matrix_normalized_geneSymbols_25031x638.RData")
@@ -46,6 +47,8 @@ runTests <- function()
    test_geneModelLayout();
 
    test_assessSnp()
+   test_assessSnp_mutOnly_wtOnly()
+   test_assessSnpMotifDbMatrices()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -439,7 +442,13 @@ test_buildMultiModelGraph_twoModels_15k_span <- function(display=FALSE)
 test_geneModelLayout <- function()
 {
    printf("--- test_geneModelLayout")
-   load("testModel.Rdata")
+   filename <- "testModel.RData";
+   if(!file.exists(filename)){
+      printf("   skipping test_geneModelLayout, no file named '%s'", filename)
+      return()
+      }
+
+   load(filename)
    print(load("ohsu.aqp4.graphLayoutNaNBug.input.RData"))
    # g <- buildMultiModelGraph(prep, models)
    targetGene <- "AQP4"
@@ -462,7 +471,7 @@ test_assessSnp <- function()
    sources <- list(fp.source)
    prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+10000, regulatoryRegionSources=sources)
 
-   tbl.assay <- assessSnp(prep, "rs3875089", 10, pwmMatchMinimumAsPercentage=80)
+   tbl.assay <- assessSnp(prep, pfms=list(), "rs3875089", 10, pwmMatchMinimumAsPercentage=80)
    tbl.changed <- subset(tbl.assay, assessed != "in.both")
 
       # only 3 motifs, all in the same location (+/- 1 base) are broken,
@@ -471,7 +480,7 @@ test_assessSnp <- function()
    checkEquals(sort(tbl.changed$signature), c("MA0090.2;26865465;+", "MA0808.1;26865466;+", "MA0809.1;26865465;+"))
 
       # now lets look deeper and see how bad the mut sequence scored
-   tbl.assay.deeper <- assessSnp(prep, "rs3875089", 10, pwmMatchMinimumAsPercentage=50)
+   tbl.assay.deeper <- assessSnp(prep, pfms=list(), "rs3875089", 10, pwmMatchMinimumAsPercentage=50)
    tbl.toCompare <- subset(tbl.assay.deeper, signature %in% tbl.changed$signature)
    wt.mean.match.score  <- mean(subset(tbl.toCompare, status=="wt")$motifRelativeScore)  # [1] 0.8201358
    mut.mean.match.score <- mean(subset(tbl.toCompare, status=="mut")$motifRelativeScore) # [1] 0.6746936
@@ -479,7 +488,7 @@ test_assessSnp <- function()
    dropOff <- abs((mut.mean.match.score - wt.mean.match.score)/mut.mean.match.score)
    checkTrue(dropOff > 0.20)
 
-   suppressWarnings(tbl.assay.short <- assessSnp(prep, "rs3875089", 3, pwmMatchMinimumAsPercentage=95))
+   suppressWarnings(tbl.assay.short <- assessSnp(prep, pfms=list(), "rs3875089", 3, pwmMatchMinimumAsPercentage=95))
    checkEquals(nrow(tbl.assay.short), 0)
 
 } # test_assessSnp
@@ -497,13 +506,34 @@ test_assessSnp_mutOnly_wtOnly <- function()
    sources <- list(fp.source)
    prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+10000, regulatoryRegionSources=sources)
 
-   tbl.assay <- assessSnp(prep, snp, shoulder=10, pwmMatchMinimumAsPercentage=80)
+   tbl.assay <- assessSnp(prep, pfms=list(), snp, shoulder=10, pwmMatchMinimumAsPercentage=80)
    checkEquals(ncol(tbl.assay), 12)
    checkTrue("delta" %in% colnames(tbl.assay))
    checkEqualsNumeric(min(tbl.assay$delta), -0.0487, tol=1e-3)
    checkEqualsNumeric(max(tbl.assay$delta),  0.165, tol=1e-2)
 
 } # test_assessSnp_mutOnly_wtOnly
+#------------------------------------------------------------------------------------------------------------------------
+test_assessSnpMotifDbMatrices <- function()
+{
+   snp <- "rs9357347"
+   snp.loc <-  list(chrom="chr6", start=41182853L, end=41182853L)  #  A>C
+   targetGene <- "TREM2"
+   tss <- 41163190   # - strand
+   chrom <- "chr6"
+   fp.source <- "postgres://whovian/brain_hint_20"
+   sources <- list(fp.source)
+   prep <- TrenaPrep(targetGene, tss, chrom, tss-5000, tss+10000, regulatoryRegionSources=sources)
+
+   pfms <- as.list(query(MotifDb, "MESP1"))
+   tbl.assay <- assessSnp(prep, pfms=pfms, snp, shoulder=8, pwmMatchMinimumAsPercentage=70)
+
+   hocomoco.human <- query(query(MotifDb, "sapiens"), "hocomoco")
+   tbl.assay.hohu <- assessSnp(prep, pfms=as.list(hocomoco.human), snp, shoulder=8, pwmMatchMinimumAsPercentage=80)
+
+   mesp1.all <- query(MotifDb, "MESP1")
+
+} # test_assessSnpMotifDbMatrices
 #------------------------------------------------------------------------------------------------------------------------
 if(!interactive())
    runTests()
