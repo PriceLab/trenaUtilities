@@ -415,8 +415,9 @@ setMethod('assessSnp', 'TrenaPrep',
                   "signature", "chrom", "motifStart", "motifEnd", "strand",
                   "match", "tf")
 
-        tbl[, coi]
-
+        tbl <- tbl[, coi]
+        tbl$variant <- variant
+        tbl
         }) # assessSnp
 
 #------------------------------------------------------------------------------------------------------------------------

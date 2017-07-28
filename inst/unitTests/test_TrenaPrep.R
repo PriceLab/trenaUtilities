@@ -472,6 +472,9 @@ test_assessSnp <- function()
    prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+10000, regulatoryRegionSources=sources)
 
    tbl.assay <- assessSnp(prep, pfms=list(), "rs3875089", 10, pwmMatchMinimumAsPercentage=80)
+   checkEquals(ncol(tbl.assay), 13)
+      # check a few of the columns including the last-added, "variant"
+   checkTrue(all(c("status", "assessed", "delta", "tf", "variant") %in% colnames(tbl.assay)))
    tbl.changed <- subset(tbl.assay, assessed != "in.both")
 
       # only 3 motifs, all in the same location (+/- 1 base) are broken,
@@ -507,7 +510,8 @@ test_assessSnp_mutOnly_wtOnly <- function()
    prep <- TrenaPrep(targetGene, aqp4.tss, "chr18", aqp4.tss-5000, aqp4.tss+10000, regulatoryRegionSources=sources)
 
    tbl.assay <- assessSnp(prep, pfms=list(), snp, shoulder=10, pwmMatchMinimumAsPercentage=80)
-   checkEquals(ncol(tbl.assay), 12)
+
+   checkEquals(ncol(tbl.assay), 13)
    checkTrue("delta" %in% colnames(tbl.assay))
    checkEqualsNumeric(min(tbl.assay$delta), -0.0487, tol=1e-3)
    checkEqualsNumeric(max(tbl.assay$delta),  0.165, tol=1e-2)
@@ -532,6 +536,8 @@ test_assessSnpMotifDbMatrices <- function()
    tbl.assay.hohu <- assessSnp(prep, pfms=as.list(hocomoco.human), snp, shoulder=8, pwmMatchMinimumAsPercentage=80)
 
    mesp1.all <- query(MotifDb, "MESP1")
+   tbl.assay.mesp1 <- assessSnp(prep, pfms=as.list(mesp1.all), snp, shoulder=8, pwmMatchMinimumAsPercentage=70)
+
 
 } # test_assessSnpMotifDbMatrices
 #------------------------------------------------------------------------------------------------------------------------
