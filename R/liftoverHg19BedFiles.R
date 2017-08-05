@@ -40,7 +40,6 @@ liftoverBedTable.hg19.hg38 <- function(tbl)
    gr.38 <- unlist(liftOver(gr, chain.19to38))
    seqinfo(gr.38) <- SeqinfoForUCSCGenome("hg38")[seqlevels(gr)]
    tbl.out <- data.frame(chrom=as.character(seqnames(gr.38)), start=start(gr.38), end=end(gr.38), stringsAsFactors=FALSE)
-   browser()
    if(ncol(tbl.otherColumns) > 0)
       tbl.out <- cbind(tbl.out, tbl.otherColumns)
 
